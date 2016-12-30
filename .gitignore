@@ -1,0 +1,11 @@
+# binary
+bin
+ape.jar
+
+# eclipse, use mvn eclipse:eclipse to generate your project
+.settings
+
+#
+*.swp
+
+

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ape" basedir="." default="assemble">
+    <property name="dist.loc" value="${ant.project.name}.jar" />
+
+    <property name="src.dir" location="src" />
+    <property name="bin.dir" location="bin" />
+
+    <property name="framework.loc" location="framework/classes-full-debug.jar" />
+    <property name="dalvik_stub.loc" location="dalvik_stub/classes.jar" />
+
+
+    <path id="deps.path">
+        <pathelement location="${framework.loc}"/>
+        <pathelement location="${dalvik_stub.loc}"/>
+    </path>
+
+    <target name="compile">
+        <mkdir dir="${bin.dir}" />
+        <javac srcdir="${src.dir}" target="1.7" source="1.7" destdir="${bin.dir}" classpathref="deps.path" encoding="utf8" debug="true">
+        </javac>
+    </target>
+
+    <target name="clean">
+        <delete dir="${bin.dir}" />
+        <delete dir="${dist.loc}" />
+    </target>
+
+    <condition property="isLinux">
+        <or>
+            <os family="mac"/>
+            <os family="unix"/>
+        </or>
+    </condition>
+
+    <condition property="isWindows">
+        <os family="windows"/>
+    </condition>
+
+    <target name="assemble-windows" depends="compile" if="isWindows">
+        <exec executable="cmd">
+            <arg value="/C"/>
+            <arg value="dx.bat"/>
+            <arg value="--dex"/>
+            <arg value="--output=${dist.loc}"/>
+            <arg value="${bin.dir}"/>
+        </exec> 
+    </target>
+
+    <target name="assemble-linux" depends="compile" if="isLinux">
+        <exec executable="dx">
+            <arg value="--dex"/>
+            <arg value="--output=${dist.loc}"/>
+            <arg value="${bin.dir}"/>
+        </exec> 
+    </target>
+
+    <target name="assemble" depends="assemble-linux,assemble-windows">
+    </target>
+</project>
