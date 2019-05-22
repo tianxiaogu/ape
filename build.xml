@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="ape" basedir="." default="assemble">
     <property name="dist.loc" value="${ant.project.name}.jar" />
+    <property name="dist-java.loc" value="${ant.project.name}-java.jar" />
 
     <property name="src.dir" location="src" />
     <property name="bin.dir" location="bin" />
@@ -18,6 +19,7 @@
         <mkdir dir="${bin.dir}" />
         <javac srcdir="${src.dir}" target="1.7" source="1.7" destdir="${bin.dir}" classpathref="deps.path" encoding="utf8" debug="true">
         </javac>
+        <jar destfile="${dist-java.loc}" basedir="${bin.dir}"/>
     </target>
 
     <target name="clean">

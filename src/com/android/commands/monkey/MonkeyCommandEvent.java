@@ -18,8 +18,6 @@ package com.android.commands.monkey;
 
 import android.app.IActivityManager;
 import android.view.IWindowManager;
-import android.os.Build;
-
 
 /**
  * Events for running the shell command.
@@ -36,7 +34,7 @@ public class MonkeyCommandEvent extends MonkeyEvent {
     @Override
     public int injectEvent(IWindowManager iwm, IActivityManager iam, int verbose) {
         if (mCmd != null) {
-            //Execute the shell command
+            // Execute the shell command
             try {
                 java.lang.Process p = Runtime.getRuntime().exec(mCmd);
                 int status = p.waitFor();

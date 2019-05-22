@@ -1,0 +1,157 @@
+<html>
+<head>
+    <script type="text/javascript" src="vis.min.js"></script>
+    <link href="vis.min.css" rel="stylesheet" type="text/css" />
+
+    <style type="text/css">
+        #screen {
+            /*display: table-cell;*/
+            width: 400px;
+            height: 100%;
+        }
+        #mytimeline {
+            /*display: table-cell;*/
+            width: 100%;
+        }
+        .box {
+            position: absolute;
+            border: 1px solid red;
+            z-index: 999;
+        }
+        #visualization {
+            position: relative;
+        }
+        .menu {
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin: 10px;
+            z-index: 9999
+        }
+    </style>
+</head>
+<body>
+<div id="contentwrapper">
+    <div id="visualization">
+        <div class="menu">
+            <input type="button" id="start" value="Start"/>
+            <input type="text" id="selection" value=""/>
+            <input type="button" id="select" value="Select"/>
+            <input type="button" id="zoomIn" value="Zoom in"/>
+            <input type="button" id="zoomOut" value="Zoom out"/>
+            <input type="button" id="moveLeft" value="Move left"/>
+            <input type="button" id="moveRight" value="Move right"/>
+            <input type="button" id="toggleRollingMode" value="toggleRollingMode"/>
+        </div>
+    </div>
+
+
+    <div id="contentcolumn">
+        <div id="mytimeline"></div>
+        <div style="display:block;margin: 0 auto;width: 400px; position: relative;" id="wrapper">
+        <img id="screenimg" style="display:block;margin: 0 auto;width: 400px;"></img>
+        </div>
+    </div>
+</div>
+
+<!-- must provide groups and items -->
+<script type="text/javascript" src="sataTimeline.vis.js"></script>
+<script type="text/javascript">
+    // create a timeline
+    var container = document.getElementById('mytimeline');
+
+    var options = {
+        groupOrder: 'content',  // groupOrder can be a property name or a sorting function
+        timeAxis: {scale: 'millisecond', step: 200},
+    };
+
+    // Show step
+    items.forEach(function (d) {
+        d.content = d.content + '@' + (parseInt(d.id) + 1)
+        items.update(d)
+    })
+
+    // initialize your timeline!
+    var timeline = new vis.Timeline(container);
+    timeline.setOptions(options);
+    timeline.setGroups(groups);
+    timeline.setItems(items);
+
+    timeline.on('doubleClick', function(properties) {
+        var id = properties.item;
+        if (id != null) {
+            var node = items.get(id);
+            if (node.screenURL) {
+                window.open(node.screenURL, '_blank');
+            }
+        }
+    });
+    timeline.on('click', function(properties) {
+        var id = properties.item;
+        if (id != null) {
+            var node = items.get(id);
+            if (node.screenURL) {
+                var img = document.getElementById("screenimg");
+                img.src = node.screenURL;
+                img.onload = function() {
+                    var boxes = document.getElementsByClassName("box");
+                    for (var i = 0 ; i < boxes.length; i++) {
+                        boxes[i].parentNode.removeChild(boxes[i]);
+                    }
+                    if (node.rect != null) {
+                        var scale = img.width / img.naturalWidth;
+                        var r = node.rect;
+                        var wrapper = document.getElementById("wrapper");
+                        var box = document.createElement("div");
+                        box.classList.add("box")
+                        box.style.left = r[0] * scale;
+                        box.style.top = r[1] * scale;
+                        box.style.width = (r[2] - r[0]) * scale;
+                        box.style.height= (r[3] - r[1]) * scale;
+                        box.style.zIndex = 999;
+                        wrapper.appendChild(box);
+                    }
+                }
+            }
+        }
+    });
+
+    /**
+     * Move the timeline a given percentage to left or right
+     * @param {Number} percentage   For example 0.1 (left) or -0.1 (right)
+     */
+    function move (percentage) {
+        var range = timeline.getWindow();
+        var interval = range.end - range.start;
+
+        timeline.setWindow({
+            start: range.start.valueOf() - interval * percentage,
+            end:   range.end.valueOf()   - interval * percentage
+        });
+    }
+
+    // attach events to the navigation buttons
+    document.getElementById('zoomIn').onclick    = function () { timeline.zoomIn( 1); };
+    document.getElementById('zoomOut').onclick   = function () { timeline.zoomOut( 1); };
+    document.getElementById('moveLeft').onclick  = function () { move( 0.2); };
+    document.getElementById('moveRight').onclick = function () { move(-0.2); };
+    document.getElementById('toggleRollingMode').onclick = function () { timeline.toggleRollingMode() };
+
+    var selection = document.getElementById('selection');
+    var select = document.getElementById('select');
+    select.onclick = function () {
+        var ids = parseInt(selection.value) - 1;
+        timeline.setSelection(ids, {focus: true});
+    };
+
+
+    var start = document.getElementById('start');
+    start.onclick = function() {
+        var rangeEnd = new Date(startTime);
+        rangeEnd.setSeconds(rangeEnd.getSeconds() + 10);
+        timeline.setWindow(startTime, rangeEnd);
+    }
+
+</script>
+</body>
+</html>

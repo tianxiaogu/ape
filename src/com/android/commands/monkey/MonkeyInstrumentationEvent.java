@@ -16,7 +16,6 @@
 
 package com.android.commands.monkey;
 
-
 import android.app.IActivityManager;
 import android.content.ComponentName;
 import android.os.Bundle;

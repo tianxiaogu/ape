@@ -21,7 +21,6 @@ import java.util.List;
 import android.app.IActivityManager;
 import android.view.IWindowManager;
 
-
 /**
  * monkey noop event (don't do anything).
  */

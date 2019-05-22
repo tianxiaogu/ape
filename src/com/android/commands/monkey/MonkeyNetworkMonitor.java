@@ -36,22 +36,26 @@ public class MonkeyNetworkMonitor extends IIntentReceiver.Stub {
     private long mCollectionStartTime; // time we started collecting data
     private long mEventTime; // time of last event (connect, disconnect, etc.)
     private int mLastNetworkType = -1; // unknown
-    private long mWifiElapsedTime = 0;  // accumulated time spent on wifi since start()
-    private long mMobileElapsedTime = 0; // accumulated time spent on mobile since start()
-    private long mElapsedTime = 0; // amount of time spent between start() and stop()
-    
-    public void performReceive(Intent intent, int resultCode, String data, Bundle extras,
-            boolean ordered, boolean sticky, int sendingUser) throws RemoteException {
-        NetworkInfo ni = (NetworkInfo) intent.getParcelableExtra(
-                ConnectivityManager.EXTRA_NETWORK_INFO);
-        if (LDEBUG) System.out.println("Network state changed: " 
-                + "type=" + ni.getType() + ", state="  + ni.getState());
+    private long mWifiElapsedTime = 0; // accumulated time spent on wifi since
+                                       // start()
+    private long mMobileElapsedTime = 0; // accumulated time spent on mobile
+                                         // since start()
+    private long mElapsedTime = 0; // amount of time spent between start() and
+                                   // stop()
+
+    public void performReceive(Intent intent, int resultCode, String data, Bundle extras, boolean ordered,
+            boolean sticky, int sendingUser) throws RemoteException {
+        NetworkInfo ni = (NetworkInfo) intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
+        if (LDEBUG)
+            System.out.println("Network state changed: " + "type=" + ni.getType() + ", state=" + ni.getState());
         updateNetworkStats();
         if (NetworkInfo.State.CONNECTED == ni.getState()) {
-            if (LDEBUG) System.out.println("Network connected");
+            if (LDEBUG)
+                System.out.println("Network connected");
             mLastNetworkType = ni.getType();
         } else if (NetworkInfo.State.DISCONNECTED == ni.getState()) {
-            if (LDEBUG) System.out.println("Network not connected");
+            if (LDEBUG)
+                System.out.println("Network not connected");
             mLastNetworkType = -1; // unknown since we're disconnected
         }
         mEventTime = SystemClock.elapsedRealtime();
@@ -61,17 +65,20 @@ public class MonkeyNetworkMonitor extends IIntentReceiver.Stub {
         long timeNow = SystemClock.elapsedRealtime();
         long delta = timeNow - mEventTime;
         switch (mLastNetworkType) {
-            case ConnectivityManager.TYPE_MOBILE:
-                if (LDEBUG) System.out.println("Adding to mobile: " + delta);
-                mMobileElapsedTime += delta;
-                break;
-            case ConnectivityManager.TYPE_WIFI:
-                if (LDEBUG) System.out.println("Adding to wifi: " + delta);
-                mWifiElapsedTime += delta;
-                break;
-            default:
-                if (LDEBUG) System.out.println("Unaccounted for: " + delta);
-                break;
+        case ConnectivityManager.TYPE_MOBILE:
+            if (LDEBUG)
+                System.out.println("Adding to mobile: " + delta);
+            mMobileElapsedTime += delta;
+            break;
+        case ConnectivityManager.TYPE_WIFI:
+            if (LDEBUG)
+                System.out.println("Adding to wifi: " + delta);
+            mWifiElapsedTime += delta;
+            break;
+        default:
+            if (LDEBUG)
+                System.out.println("Unaccounted for: " + delta);
+            break;
         }
         mElapsedTime = timeNow - mCollectionStartTime;
     }
@@ -84,23 +91,26 @@ public class MonkeyNetworkMonitor extends IIntentReceiver.Stub {
     }
 
     public void register(IActivityManager am) throws RemoteException {
-        if (LDEBUG) System.out.println("registering Receiver");
-        am.registerReceiver(null, null, this, filter, null, UserHandle.USER_ALL); 
+        if (LDEBUG)
+            System.out.println("registering Receiver");
+        // am.registerReceiver(null, null, this, filter, null,
+        // UserHandle.USER_ALL);
+        ApeAPIAdapter.registerReceiver(am, this, filter, UserHandle.USER_ALL);
     }
-    
+
     public void unregister(IActivityManager am) throws RemoteException {
-        if (LDEBUG) System.out.println("unregistering Receiver");
+        if (LDEBUG)
+            System.out.println("unregistering Receiver");
         am.unregisterReceiver(this);
     }
-    
+
     public void stop() {
         updateNetworkStats();
     }
-    
+
     public void dump() {
-        System.out.println("## Network stats: elapsed time=" + mElapsedTime + "ms (" 
-                + mMobileElapsedTime + "ms mobile, "
-                + mWifiElapsedTime + "ms wifi, "
+        System.out.println("## Network stats: elapsed time=" + mElapsedTime + "ms (" + mMobileElapsedTime
+                + "ms mobile, " + mWifiElapsedTime + "ms wifi, "
                 + (mElapsedTime - mMobileElapsedTime - mWifiElapsedTime) + "ms not connected)");
     }
- }
+}

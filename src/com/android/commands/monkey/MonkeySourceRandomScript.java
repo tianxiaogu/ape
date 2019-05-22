@@ -43,26 +43,33 @@ public class MonkeySourceRandomScript implements MonkeyEventSource {
     private int mScriptCount = 0;
 
     /**
-     * Creates a MonkeySourceRandomScript instance with an additional setup script.
+     * Creates a MonkeySourceRandomScript instance with an additional setup
+     * script.
      *
-     * @param setupFileName The name of the setup script file on the device.
-     * @param scriptFileNames An ArrayList of the names of the script files to be run randomly.
-     * @param throttle The amount of time to sleep in ms between events.
-     * @param randomizeThrottle Whether to randomize throttle.
-     * @param random The random number generator.
+     * @param setupFileName
+     *            The name of the setup script file on the device.
+     * @param scriptFileNames
+     *            An ArrayList of the names of the script files to be run
+     *            randomly.
+     * @param throttle
+     *            The amount of time to sleep in ms between events.
+     * @param randomizeThrottle
+     *            Whether to randomize throttle.
+     * @param random
+     *            The random number generator.
      */
-    public MonkeySourceRandomScript(String setupFileName, ArrayList<String> scriptFileNames,
-            long throttle, boolean randomizeThrottle, Random random, long profileWaitTime,
-            long deviceSleepTime, boolean randomizeScript) {
+    public MonkeySourceRandomScript(String setupFileName, ArrayList<String> scriptFileNames, long throttle,
+            boolean randomizeThrottle, Random random, long profileWaitTime, long deviceSleepTime,
+            boolean randomizeScript) {
         if (setupFileName != null) {
-            mSetupSource = new MonkeySourceScript(random, setupFileName, throttle,
-                    randomizeThrottle, profileWaitTime, deviceSleepTime);
+            mSetupSource = new MonkeySourceScript(random, setupFileName, throttle, randomizeThrottle, profileWaitTime,
+                    deviceSleepTime);
             mCurrentSource = mSetupSource;
         }
 
-        for (String fileName: scriptFileNames) {
-            mScriptSources.add(new MonkeySourceScript(random, fileName, throttle,
-                    randomizeThrottle, profileWaitTime, deviceSleepTime));
+        for (String fileName : scriptFileNames) {
+            mScriptSources.add(new MonkeySourceScript(random, fileName, throttle, randomizeThrottle, profileWaitTime,
+                    deviceSleepTime));
         }
 
         mRandom = random;
@@ -70,24 +77,29 @@ public class MonkeySourceRandomScript implements MonkeyEventSource {
     }
 
     /**
-     * Creates a MonkeySourceRandomScript instance without an additional setup script.
+     * Creates a MonkeySourceRandomScript instance without an additional setup
+     * script.
      *
-     * @param scriptFileNames An ArrayList of the names of the script files to be run randomly.
-     * @param throttle The amount of time to sleep in ms between events.
-     * @param randomizeThrottle Whether to randomize throttle.
-     * @param random The random number generator.
+     * @param scriptFileNames
+     *            An ArrayList of the names of the script files to be run
+     *            randomly.
+     * @param throttle
+     *            The amount of time to sleep in ms between events.
+     * @param randomizeThrottle
+     *            Whether to randomize throttle.
+     * @param random
+     *            The random number generator.
      */
-    public MonkeySourceRandomScript(ArrayList<String> scriptFileNames, long throttle,
-            boolean randomizeThrottle, Random random, long profileWaitTime, long deviceSleepTime,
-            boolean randomizeScript) {
-        this(null, scriptFileNames, throttle, randomizeThrottle, random, profileWaitTime,
-                deviceSleepTime, randomizeScript);
+    public MonkeySourceRandomScript(ArrayList<String> scriptFileNames, long throttle, boolean randomizeThrottle,
+            Random random, long profileWaitTime, long deviceSleepTime, boolean randomizeScript) {
+        this(null, scriptFileNames, throttle, randomizeThrottle, random, profileWaitTime, deviceSleepTime,
+                randomizeScript);
     }
 
     /**
-     * Gets the next event from the current event source.  If the event source is null, a new
-     * script event source is chosen randomly from the list of script sources and the next event is
-     * chosen from that.
+     * Gets the next event from the current event source. If the event source is
+     * null, a new script event source is chosen randomly from the list of
+     * script sources and the next event is chosen from that.
      *
      * @return The first event in the event queue or null if the end of the file
      *         is reached or if an error is encountered reading the file.
@@ -97,7 +109,7 @@ public class MonkeySourceRandomScript implements MonkeyEventSource {
             int numSources = mScriptSources.size();
             if (numSources == 1) {
                 mCurrentSource = mScriptSources.get(0);
-            } else if (numSources > 1 ) {
+            } else if (numSources > 1) {
                 if (mRandomizeScript) {
                     mCurrentSource = mScriptSources.get(mRandom.nextInt(numSources));
                 } else {
@@ -120,7 +132,8 @@ public class MonkeySourceRandomScript implements MonkeyEventSource {
     /**
      * Sets the verbosity for the source as well as all sub event sources.
      *
-     * @param verbose The verbose level.
+     * @param verbose
+     *            The verbose level.
      */
     public void setVerbose(int verbose) {
         mVerbose = verbose;
@@ -129,7 +142,7 @@ public class MonkeySourceRandomScript implements MonkeyEventSource {
             mSetupSource.setVerbose(verbose);
         }
 
-        for (MonkeySourceScript source: mScriptSources) {
+        for (MonkeySourceScript source : mScriptSources) {
             source.setVerbose(verbose);
         }
     }
@@ -146,7 +159,7 @@ public class MonkeySourceRandomScript implements MonkeyEventSource {
             return false;
         }
 
-        for (MonkeySourceScript source: mScriptSources) {
+        for (MonkeySourceScript source : mScriptSources) {
             if (!source.validate()) {
                 return false;
             }

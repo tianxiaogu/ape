@@ -25,13 +25,12 @@ import android.util.Log;
 import android.view.IWindowManager;
 import android.os.Build;
 
-
 /**
  * Special events for power measurement.
  */
 public class MonkeyPowerEvent extends MonkeyEvent {
 
-    //Parameter for the power test runner
+    // Parameter for the power test runner
     private static final String TAG = "PowerTester";
     private static final String LOG_FILE = "/sdcard/autotester.log";
     private static ArrayList<ContentValues> mLogEvents = new ArrayList<ContentValues>();
@@ -45,7 +44,7 @@ public class MonkeyPowerEvent extends MonkeyEvent {
     private String mPowerLogTag;
     private String mTestResult;
 
-    //10 secs for the screen to trun off after the usb notification
+    // 10 secs for the screen to trun off after the usb notification
     private static final long USB_DELAY_TIME = 10000;
 
     public MonkeyPowerEvent(String powerLogTag, String powerTestResult) {
@@ -122,7 +121,8 @@ public class MonkeyPowerEvent extends MonkeyEvent {
             Log.w(TAG, "Can't write sdcard log file", e);
         } finally {
             try {
-                if (writer != null) writer.close();
+                if (writer != null)
+                    writer.close();
             } catch (IOException e) {
             }
         }

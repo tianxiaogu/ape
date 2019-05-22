@@ -44,7 +44,7 @@ public class MonkeyActivityEvent extends MonkeyEvent {
     /**
      * @return Intent for the new activity
      */
-    private Intent getEvent() {
+    /* private */ Intent getEvent() {
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         intent.setComponent(mApp);
@@ -59,22 +59,20 @@ public class MonkeyActivityEvent extends MonkeyEvent {
             System.out.println(":Switch: " + intent.toUri(0));
         }
 
-        if (mAlarmTime != 0){
+        if (mAlarmTime != 0) {
             Bundle args = new Bundle();
             args.putLong("alarmTime", mAlarmTime);
             intent.putExtras(args);
         }
 
         try {
-            iam.startActivity(null, null, intent, null, null, null, 0,
-                    0, null, null);
+            iam.startActivity(null, null, intent, null, null, null, 0, 0, null, null);
         } catch (RemoteException e) {
             System.err.println("** Failed talking with activity manager!");
             return MonkeyEvent.INJECT_ERROR_REMOTE_EXCEPTION;
         } catch (SecurityException e) {
             if (verbose > 0) {
-                System.out.println("** Permissions error starting activity "
-                        + intent.toUri(0));
+                System.out.println("** Permissions error starting activity " + intent.toUri(0));
             }
             return MonkeyEvent.INJECT_ERROR_SECURITY_EXCEPTION;
         }

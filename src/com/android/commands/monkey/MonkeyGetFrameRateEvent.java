@@ -30,10 +30,9 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 /**
- * Events for running a special shell command to capture the frame rate.
- * To run this test, the system property viewancestor.profile_rendering
- * must be set to true to force the currently focused window to render at
- * 60 Hz.
+ * Events for running a special shell command to capture the frame rate. To run
+ * this test, the system property viewancestor.profile_rendering must be set to
+ * true to force the currently focused window to render at 60 Hz.
  */
 public class MonkeyGetFrameRateEvent extends MonkeyEvent {
 
@@ -49,8 +48,7 @@ public class MonkeyGetFrameRateEvent extends MonkeyEvent {
     private static final String TAG = "MonkeyGetFrameRateEvent";
     private static final String LOG_FILE = "/sdcard/avgFrameRateOut.txt";
 
-    private static final Pattern NO_OF_FRAMES_PATTERN =
-        Pattern.compile(".*\\(([a-f[A-F][0-9]].*?)\\s.*\\)");
+    private static final Pattern NO_OF_FRAMES_PATTERN = Pattern.compile(".*\\(([a-f[A-F][0-9]].*?)\\s.*\\)");
 
     public MonkeyGetFrameRateEvent(String status, String testCaseName) {
         super(EVENT_TYPE_ACTIVITY);
@@ -63,7 +61,7 @@ public class MonkeyGetFrameRateEvent extends MonkeyEvent {
         mStatus = status;
     }
 
-    //Calculate the average frame rate
+    // Calculate the average frame rate
     private float getAverageFrameRate(int totalNumberOfFrame, float duration) {
         float avgFrameRate = 0;
         if (duration > 0) {
@@ -83,13 +81,14 @@ public class MonkeyGetFrameRateEvent extends MonkeyEvent {
             writer = new FileWriter(LOG_FILE, true); // true = append
             totalNumberOfFrame = mEndFrameNo - mStartFrameNo;
             avgFrameRate = getAverageFrameRate(totalNumberOfFrame, mDuration);
-            writer.write(String.format("%s:%.2f\n",mTestCaseName,avgFrameRate));
+            writer.write(String.format("%s:%.2f\n", mTestCaseName, avgFrameRate));
             writer.close();
         } catch (IOException e) {
             Log.w(TAG, "Can't write sdcard log file", e);
         } finally {
             try {
-                if (writer != null) writer.close();
+                if (writer != null)
+                    writer.close();
             } catch (IOException e) {
                 Log.e(TAG, "IOException " + e.toString());
             }
@@ -97,10 +96,10 @@ public class MonkeyGetFrameRateEvent extends MonkeyEvent {
     }
 
     // Parse the output of the surfaceFlinge shell command call
-    private String getNumberOfFrames(String input){
+    private String getNumberOfFrames(String input) {
         String noOfFrames = null;
         Matcher m = NO_OF_FRAMES_PATTERN.matcher(input);
-        if (m.matches()){
+        if (m.matches()) {
             noOfFrames = m.group(1);
         }
         return noOfFrames;
@@ -114,12 +113,11 @@ public class MonkeyGetFrameRateEvent extends MonkeyEvent {
             p = Runtime.getRuntime().exec(GET_FRAMERATE_CMD);
             int status = p.waitFor();
             if (status != 0) {
-                System.err.println(String.format("// Shell command %s status was %s",
-                        GET_FRAMERATE_CMD, status));
+                System.err.println(String.format("// Shell command %s status was %s", GET_FRAMERATE_CMD, status));
             }
             result = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
-            //Only need the first line of the output
+            // Only need the first line of the output
             String output = result.readLine();
 
             if (output != null) {
@@ -130,7 +128,7 @@ public class MonkeyGetFrameRateEvent extends MonkeyEvent {
                     mEndFrameNo = Integer.parseInt(getNumberOfFrames(output), 16);
                     mEndTime = System.currentTimeMillis();
                     long diff = mEndTime - mStartTime;
-                    mDuration = (float)(diff/1000.0);
+                    mDuration = (float) (diff / 1000.0);
                     writeAverageFrameRate();
                 }
             }

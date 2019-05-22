@@ -1,0 +1,16 @@
+[
+{
+    "prob": 0.3,
+        "actions": [{
+            "xpath": "//*[@resource-id='com.google.android.apps.gmm:id/search_omnibox_edit_text']",
+            "action": "CLICK",
+            "text": "San Francisco",
+            "throttle": 3000
+        },
+        {
+            "xpath": "//*[@resource-id='com.google.android.apps.gmm:id/mylocation_button']",
+            "action": "CLICK",
+            "throttle": 10000
+        }]
+}
+]

@@ -1,0 +1,81 @@
+<html>
+<head>
+    <script type="text/javascript" src="vis.min.js"></script>
+    <link href="vis.min.css" rel="stylesheet" type="text/css" />
+
+    <style type="text/css">
+        #screen {
+            /*display: table-cell;*/
+            width: 400px;
+            height: 100%;
+        }
+        #mynetwork {
+            /*display: table-cell;*/
+            width: 100%;
+            height: 100%;
+        }
+#contentwrapper{
+float: left;
+width: 100%;
+}
+#leftcolumn{
+float: left;
+width: 400px; /*Width of left column*/
+margin-left: -100%;
+}
+    </style>
+</head>
+<body>
+<div id="contentwrapper">
+    <div id="contentcolumn">
+        <div id="mynetwork"></div>
+    </div>
+</div>
+<div id="leftcolumn">
+<div id="screen"><img id="screenimg" style="width: 400px;"></img></div>
+</div>
+<script type="text/javascript" src="sataGraph.vis.js"></script>
+<script type="text/javascript">
+    // create a network
+    var container = document.getElementById('mynetwork');
+
+    // provide the data in the vis format
+    var data = {
+        nodes: nodes,
+        edges: edges
+    };
+    var options = {
+        edges : {
+            arrows : {
+                to : {
+                    enabled : true,
+                    scaleFactor : 1,
+                    type : 'arrow',
+                }
+            }
+        }
+    };
+
+    // initialize your network!
+    var network = new vis.Network(container, data, options);
+
+    network.on('doubleClick', function(properties) {
+        var nodes = properties.nodes;
+        if (nodes.length > 0) {
+            var id = nodes[0];
+            var node = data.nodes.get(id);
+            window.open(node.screenURL, '_blank');
+        }
+    });
+    network.on('click', function(properties) {
+        var nodes = properties.nodes;
+        if (nodes.length > 0) {
+            var id = nodes[0];
+            var node = data.nodes.get(id);
+            var img = document.getElementById("screenimg");
+            img.src = node.screenURL;
+        }
+    });
+</script>
+</body>
+</html>

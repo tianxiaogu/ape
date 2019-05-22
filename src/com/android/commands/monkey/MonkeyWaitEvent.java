@@ -19,12 +19,11 @@ package com.android.commands.monkey;
 import android.app.IActivityManager;
 import android.view.IWindowManager;
 
-
 /**
  * monkey throttle event
  */
 public class MonkeyWaitEvent extends MonkeyEvent {
-    private long mWaitTime;
+    /* private */ long mWaitTime;
 
     public MonkeyWaitEvent(long waitTime) {
         super(MonkeyEvent.EVENT_TYPE_THROTTLE);

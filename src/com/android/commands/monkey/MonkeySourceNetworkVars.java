@@ -40,6 +40,7 @@ public class MonkeySourceNetworkVars {
     private static interface VarGetter {
         /**
          * Get the value of the var.
+         * 
          * @returns the value of the var.
          */
         public String get();
@@ -57,7 +58,8 @@ public class MonkeySourceNetworkVars {
         }
     }
 
-    // Use a TreeMap to keep the keys sorted so they get displayed nicely in listvar
+    // Use a TreeMap to keep the keys sorted so they get displayed nicely in
+    // listvar
     private static final Map<String, VarGetter> VAR_MAP = new TreeMap<String, VarGetter>();
 
     static {
@@ -90,80 +92,80 @@ public class MonkeySourceNetworkVars {
         display.getMetrics(dm);
         VAR_MAP.put("display.density", new StaticVarGetter(Float.toString(dm.density)));
 
-        // am.  note that the current activity information isn't valid
+        // am. note that the current activity information isn't valid
         // until the first activity gets launched after the monkey has
         // been started.
         VAR_MAP.put("am.current.package", new VarGetter() {
-                public String get() {
-                    return Monkey.currentPackage;
-                }
-            });
+            public String get() {
+                return Monkey.currentPackage;
+            }
+        });
         VAR_MAP.put("am.current.action", new VarGetter() {
-                public String get() {
-                    if (Monkey.currentIntent == null) {
-                        return null;
-                    }
-                    return Monkey.currentIntent.getAction();
+            public String get() {
+                if (Monkey.currentIntent == null) {
+                    return null;
                 }
-            });
+                return Monkey.currentIntent.getAction();
+            }
+        });
         VAR_MAP.put("am.current.comp.class", new VarGetter() {
-                public String get() {
-                    if (Monkey.currentIntent == null) {
-                        return null;
-                    }
-                    return Monkey.currentIntent.getComponent().getClassName();
+            public String get() {
+                if (Monkey.currentIntent == null) {
+                    return null;
                 }
-            });
+                return Monkey.currentIntent.getComponent().getClassName();
+            }
+        });
         VAR_MAP.put("am.current.comp.package", new VarGetter() {
-                public String get() {
-                    if (Monkey.currentIntent == null) {
-                        return null;
-                    }
-                    return Monkey.currentIntent.getComponent().getPackageName();
+            public String get() {
+                if (Monkey.currentIntent == null) {
+                    return null;
                 }
-            });
+                return Monkey.currentIntent.getComponent().getPackageName();
+            }
+        });
         VAR_MAP.put("am.current.data", new VarGetter() {
-                public String get() {
-                    if (Monkey.currentIntent == null) {
-                        return null;
-                    }
-                    return Monkey.currentIntent.getDataString();
+            public String get() {
+                if (Monkey.currentIntent == null) {
+                    return null;
                 }
-            });
+                return Monkey.currentIntent.getDataString();
+            }
+        });
         VAR_MAP.put("am.current.categories", new VarGetter() {
-                public String get() {
-                    if (Monkey.currentIntent == null) {
-                        return null;
-                    }
-                    StringBuffer sb = new StringBuffer();
-                    for (String cat : Monkey.currentIntent.getCategories()) {
-                        sb.append(cat).append(" ");
-                    }
-                    return sb.toString();
+            public String get() {
+                if (Monkey.currentIntent == null) {
+                    return null;
                 }
-            });
+                StringBuffer sb = new StringBuffer();
+                for (String cat : Monkey.currentIntent.getCategories()) {
+                    sb.append(cat).append(" ");
+                }
+                return sb.toString();
+            }
+        });
 
         // clock
         VAR_MAP.put("clock.realtime", new VarGetter() {
-                public String get() {
-                    return Long.toString(SystemClock.elapsedRealtime());
-                }
-            });
+            public String get() {
+                return Long.toString(SystemClock.elapsedRealtime());
+            }
+        });
         VAR_MAP.put("clock.uptime", new VarGetter() {
-                public String get() {
-                    return Long.toString(SystemClock.uptimeMillis());
-                }
-            });
+            public String get() {
+                return Long.toString(SystemClock.uptimeMillis());
+            }
+        });
         VAR_MAP.put("clock.millis", new VarGetter() {
-                public String get() {
-                    return Long.toString(System.currentTimeMillis());
-                }
-            });
+            public String get() {
+                return Long.toString(System.currentTimeMillis());
+            }
+        });
         VAR_MAP.put("monkey.version", new VarGetter() {
-                public String get() {
-                    return Integer.toString(MonkeySourceNetwork.MONKEY_NETWORK_VERSION);
-                }
-            });
+            public String get() {
+                return Integer.toString(MonkeySourceNetwork.MONKEY_NETWORK_VERSION);
+            }
+        });
     }
 
     /**
@@ -171,8 +173,7 @@ public class MonkeySourceNetworkVars {
      */
     public static class ListVarCommand implements MonkeySourceNetwork.MonkeyCommand {
         // listvar
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             Set<String> keys = VAR_MAP.keySet();
             StringBuffer sb = new StringBuffer();
             for (String key : keys) {
@@ -187,8 +188,7 @@ public class MonkeySourceNetworkVars {
      */
     public static class GetVarCommand implements MonkeyCommand {
         // getvar varname
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() == 2) {
                 VarGetter getter = VAR_MAP.get(command.get(1));
                 if (getter == null) {

@@ -1,6 +1,11 @@
 # binary
 bin
 ape.jar
+ape-bin/
+ape-bin.zip
+ape-java-proguard.jar
+ape-java.jar
+
 
 # eclipse, use mvn eclipse:eclipse to generate your project
 .settings
@@ -9,3 +14,4 @@ ape.jar
 *.swp
 
 
+.DS_Store

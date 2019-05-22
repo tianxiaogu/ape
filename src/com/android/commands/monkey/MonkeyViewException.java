@@ -26,7 +26,8 @@ public class MonkeyViewException extends java.lang.Exception {
     /**
      * Constructs a MonkeyViewException object
      *
-     * @param message the error message
+     * @param message
+     *            the error message
      */
     public MonkeyViewException(String message) {
         super(message);

@@ -17,17 +17,28 @@
 package com.android.commands.monkey;
 
 import android.app.IActivityManager;
+import android.hardware.display.DisplayManagerGlobal;
 import android.hardware.input.InputManager;
 import android.os.SystemClock;
+import android.util.DisplayMetrics;
 import android.util.SparseArray;
+import android.view.Display;
 import android.view.IWindowManager;
 import android.view.MotionEvent;
-
 
 /**
  * monkey motion event
  */
 public abstract class MonkeyMotionEvent extends MonkeyEvent {
+
+    static final int statusBarHeight;
+    static {
+        Display display = DisplayManagerGlobal.getInstance().getRealDisplay(Display.DEFAULT_DISPLAY);
+        DisplayMetrics dm = new DisplayMetrics();
+        display.getMetrics(dm);
+        statusBarHeight = (int) (24 * dm.density);
+    }
+
     private long mDownTime;
     private long mEventTime;
     private int mAction;
@@ -40,7 +51,7 @@ public abstract class MonkeyMotionEvent extends MonkeyEvent {
     private int mFlags;
     private int mEdgeFlags;
 
-    //If true, this is an intermediate step (more verbose logging, only)
+    // If true, this is an intermediate step (more verbose logging, only)
     private boolean mIntermediateNote;
 
     protected MonkeyMotionEvent(int type, int source, int action) {
@@ -58,10 +69,12 @@ public abstract class MonkeyMotionEvent extends MonkeyEvent {
         return addPointer(id, x, y, 0, 0);
     }
 
-    public MonkeyMotionEvent addPointer(int id, float x, float y,
-            float pressure, float size) {
+    public MonkeyMotionEvent addPointer(int id, float x, float y, float pressure, float size) {
         MotionEvent.PointerCoords c = new MotionEvent.PointerCoords();
         c.x = x;
+        if (y < statusBarHeight) {
+            y = statusBarHeight + 1;
+        }
         c.y = y;
         c.pressure = pressure;
         c.size = size;
@@ -125,7 +138,7 @@ public abstract class MonkeyMotionEvent extends MonkeyEvent {
      * 
      * @return instance of a motion event
      */
-    private MotionEvent getEvent() {
+    /* private */ MotionEvent getEvent() {
         int pointerCount = mPointers.size();
         int[] pointerIds = new int[pointerCount];
         MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[pointerCount];
@@ -134,10 +147,9 @@ public abstract class MonkeyMotionEvent extends MonkeyEvent {
             pointerCoords[i] = mPointers.valueAt(i);
         }
 
-        MotionEvent ev = MotionEvent.obtain(mDownTime,
-                mEventTime < 0 ? SystemClock.uptimeMillis() : mEventTime,
-                mAction, pointerCount, pointerIds, pointerCoords,
-                mMetaState, mXPrecision, mYPrecision, mDeviceId, mEdgeFlags, mSource, mFlags);
+        MotionEvent ev = MotionEvent.obtain(mDownTime, mEventTime < 0 ? SystemClock.uptimeMillis() : mEventTime,
+                mAction, pointerCount, pointerIds, pointerCoords, mMetaState, mXPrecision, mYPrecision, mDeviceId,
+                mEdgeFlags, mSource, mFlags);
         return ev;
     }
 
@@ -153,27 +165,27 @@ public abstract class MonkeyMotionEvent extends MonkeyEvent {
             StringBuilder msg = new StringBuilder(":Sending ");
             msg.append(getTypeLabel()).append(" (");
             switch (me.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    msg.append("ACTION_DOWN");
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    msg.append("ACTION_MOVE");
-                    break;
-                case MotionEvent.ACTION_UP:
-                    msg.append("ACTION_UP");
-                    break;
-                case MotionEvent.ACTION_CANCEL:
-                    msg.append("ACTION_CANCEL");
-                    break;
-                case MotionEvent.ACTION_POINTER_DOWN:
-                    msg.append("ACTION_POINTER_DOWN ").append(me.getPointerId(me.getActionIndex()));
-                    break;
-                case MotionEvent.ACTION_POINTER_UP:
-                    msg.append("ACTION_POINTER_UP ").append(me.getPointerId(me.getActionIndex()));
-                    break;
-                default:
-                    msg.append(me.getAction());
-                    break;
+            case MotionEvent.ACTION_DOWN:
+                msg.append("ACTION_DOWN");
+                break;
+            case MotionEvent.ACTION_MOVE:
+                msg.append("ACTION_MOVE");
+                break;
+            case MotionEvent.ACTION_UP:
+                msg.append("ACTION_UP");
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                msg.append("ACTION_CANCEL");
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                msg.append("ACTION_POINTER_DOWN ").append(me.getPointerId(me.getActionIndex()));
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                msg.append("ACTION_POINTER_UP ").append(me.getPointerId(me.getActionIndex()));
+                break;
+            default:
+                msg.append(me.getAction());
+                break;
             }
             msg.append("):");
 

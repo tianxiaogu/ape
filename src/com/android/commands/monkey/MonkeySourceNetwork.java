@@ -43,8 +43,8 @@ import java.util.Queue;
 import java.util.StringTokenizer;
 
 /**
- * An Event source for getting Monkey Network Script commands from
- * over the network.
+ * An Event source for getting Monkey Network Script commands from over the
+ * network.
  */
 public class MonkeySourceNetwork implements MonkeyEventSource {
     private static final String TAG = "MonkeyStub";
@@ -53,8 +53,8 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     private static DeferredReturn deferredReturn;
 
     /**
-     * ReturnValue from the MonkeyCommand that indicates whether the
-     * command was sucessful or not.
+     * ReturnValue from the MonkeyCommand that indicates whether the command was
+     * sucessful or not.
      */
     public static class MonkeyCommandReturn {
         private final boolean success;
@@ -65,8 +65,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
             this.message = null;
         }
 
-        public MonkeyCommandReturn(boolean success,
-                                   String message) {
+        public MonkeyCommandReturn(boolean success, String message) {
             this.success = success;
             this.message = message;
         }
@@ -86,8 +85,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
 
     public final static MonkeyCommandReturn OK = new MonkeyCommandReturn(true);
     public final static MonkeyCommandReturn ERROR = new MonkeyCommandReturn(false);
-    public final static MonkeyCommandReturn EARG = new MonkeyCommandReturn(false,
-                                                                            "Invalid Argument");
+    public final static MonkeyCommandReturn EARG = new MonkeyCommandReturn(false, "Invalid Argument");
 
     /**
      * Interface that MonkeyCommands must implement.
@@ -96,8 +94,10 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
         /**
          * Translate the command line into a sequence of MonkeyEvents.
          *
-         * @param command the command line.
-         * @param queue the command queue.
+         * @param command
+         *            the command line.
+         * @param queue
+         *            the command queue.
          * @return MonkeyCommandReturn indicating what happened.
          */
         MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue);
@@ -109,8 +109,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     private static class FlipCommand implements MonkeyCommand {
         // flip open
         // flip closed
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() > 1) {
                 String direction = command.get(1);
                 if ("open".equals(direction)) {
@@ -133,8 +132,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
         // touch down 120 120
         // touch move 140 140
         // touch up 140 140
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() == 4) {
                 String actionName = command.get(1);
                 int x = 0;
@@ -162,8 +160,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
                     return EARG;
                 }
 
-                queue.enqueueEvent(new MonkeyTouchEvent(action)
-                        .addPointer(0, x, y));
+                queue.enqueueEvent(new MonkeyTouchEvent(action).addPointer(0, x, y));
                 return OK;
             }
             return EARG;
@@ -177,8 +174,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
         // trackball [dx] [dy]
         // trackball 1 0 -- move right
         // trackball -1 0 -- move left
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() == 3) {
                 int dx = 0;
                 int dy = 0;
@@ -190,8 +186,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
                     Log.e(TAG, "Got something that wasn't a number", e);
                     return EARG;
                 }
-                queue.enqueueEvent(new MonkeyTrackballEvent(MotionEvent.ACTION_MOVE)
-                        .addPointer(0, dx, dy));
+                queue.enqueueEvent(new MonkeyTrackballEvent(MotionEvent.ACTION_MOVE).addPointer(0, dx, dy));
                 return OK;
 
             }
@@ -206,8 +201,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
         // key [down|up] [keycode]
         // key down 82
         // key up 82
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() == 3) {
                 int keyCode = getKeyCode(command.get(2));
                 if (keyCode < 0) {
@@ -236,7 +230,8 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     /**
      * Get an integer keycode value from a given keyname.
      *
-     * @param keyName the key name to get the code for
+     * @param keyName
+     *            the key name to get the code for
      * @return the integer keycode value, or -1 on error.
      */
     private static int getKeyCode(String keyName) {
@@ -251,7 +246,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
                 // OK, one last ditch effort to find a match.
                 // Build the KEYCODE_STRING from the string
                 // we've been given and see if that key
-                // exists.  This would allow you to do "key
+                // exists. This would allow you to do "key
                 // down menu", for example.
                 keyCode = MonkeySourceRandom.getKeyCode("KEYCODE_" + keyName.toUpperCase());
                 if (keyCode == KeyEvent.KEYCODE_UNKNOWN) {
@@ -268,8 +263,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
      */
     private static class SleepCommand implements MonkeyCommand {
         // sleep 2000
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() == 2) {
                 int sleep = -1;
                 String sleepStr = command.get(1);
@@ -291,8 +285,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
      */
     private static class TypeCommand implements MonkeyCommand {
         // wake
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() == 2) {
                 String str = command.get(1);
 
@@ -300,8 +293,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
 
                 // Convert the string to an array of KeyEvent's for
                 // the built in keymap.
-                KeyCharacterMap keyCharacterMap = KeyCharacterMap.
-                        load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+                KeyCharacterMap keyCharacterMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
                 KeyEvent[] events = keyCharacterMap.getEvents(chars);
 
                 // enqueue all the events we just got.
@@ -319,8 +311,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
      */
     private static class WakeCommand implements MonkeyCommand {
         // wake
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (!wake()) {
                 return ERROR;
             }
@@ -329,13 +320,11 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     }
 
     /**
-     * Command to "tap" at a location (Sends a down and up touch
-     * event).
+     * Command to "tap" at a location (Sends a down and up touch event).
      */
     private static class TapCommand implements MonkeyCommand {
         // tap x y
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() == 3) {
                 int x = 0;
                 int y = 0;
@@ -348,10 +337,8 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
                     return EARG;
                 }
 
-                queue.enqueueEvent(new MonkeyTouchEvent(MotionEvent.ACTION_DOWN)
-                        .addPointer(0, x, y));
-                queue.enqueueEvent(new MonkeyTouchEvent(MotionEvent.ACTION_UP)
-                        .addPointer(0, x, y));
+                queue.enqueueEvent(new MonkeyTouchEvent(MotionEvent.ACTION_DOWN).addPointer(0, x, y));
+                queue.enqueueEvent(new MonkeyTouchEvent(MotionEvent.ACTION_UP).addPointer(0, x, y));
                 return OK;
             }
             return EARG;
@@ -363,8 +350,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
      */
     private static class PressCommand implements MonkeyCommand {
         // press keycode
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() == 2) {
                 int keyCode = getKeyCode(command.get(1));
                 if (keyCode < 0) {
@@ -383,29 +369,30 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     }
 
     /**
-     * Command to defer the return of another command until the given event occurs.
-     * deferreturn takes three arguments. It takes an event to wait for (e.g. waiting for the
-     * device to display a different activity would the "screenchange" event), a
-     * timeout, which is the number of microseconds to wait for the event to occur, and it takes
-     * a command. The command can be any other Monkey command that can be issued over the network
-     * (e.g. press KEYCODE_HOME). deferreturn will then run this command, return an OK, wait for
-     * the event to occur and return the deferred return value when either the event occurs or
-     * when the timeout is reached (whichever occurs first). Note that there is no difference
-     * between an event occurring and the timeout being reached; the client will have to verify
-     * that the change actually occured.
+     * Command to defer the return of another command until the given event
+     * occurs. deferreturn takes three arguments. It takes an event to wait for
+     * (e.g. waiting for the device to display a different activity would the
+     * "screenchange" event), a timeout, which is the number of microseconds to
+     * wait for the event to occur, and it takes a command. The command can be
+     * any other Monkey command that can be issued over the network (e.g. press
+     * KEYCODE_HOME). deferreturn will then run this command, return an OK, wait
+     * for the event to occur and return the deferred return value when either
+     * the event occurs or when the timeout is reached (whichever occurs first).
+     * Note that there is no difference between an event occurring and the
+     * timeout being reached; the client will have to verify that the change
+     * actually occured.
      *
-     * Example:
-     *     deferreturn screenchange 1000 press KEYCODE_HOME
-     * This command will press the home key on the device and then wait for the screen to change
-     * for up to one second. Either the screen will change, and the results fo the key press will
-     * be returned to the client, or the timeout will be reached, and the results for the key
-     * press will be returned to the client.
+     * Example: deferreturn screenchange 1000 press KEYCODE_HOME This command
+     * will press the home key on the device and then wait for the screen to
+     * change for up to one second. Either the screen will change, and the
+     * results fo the key press will be returned to the client, or the timeout
+     * will be reached, and the results for the key press will be returned to
+     * the client.
      */
     private static class DeferReturnCommand implements MonkeyCommand {
         // deferreturn [event] [timeout (ms)] [command]
         // deferreturn screenchange 100 tap 10 10
-        public MonkeyCommandReturn translateCommand(List<String> command,
-                                                    CommandQueue queue) {
+        public MonkeyCommandReturn translateCommand(List<String> command, CommandQueue queue) {
             if (command.size() > 3) {
                 String event = command.get(1);
                 int eventId;
@@ -427,15 +414,13 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
         }
     }
 
-
     /**
      * Force the device to wake up.
      *
      * @return true if woken up OK.
      */
     private static final boolean wake() {
-        IPowerManager pm =
-                IPowerManager.Stub.asInterface(ServiceManager.getService(Context.POWER_SERVICE));
+        IPowerManager pm = IPowerManager.Stub.asInterface(ServiceManager.getService(Context.POWER_SERVICE));
         try {
             pm.wakeUp(SystemClock.uptimeMillis(), "Monkey", null);
         } catch (RemoteException e) {
@@ -464,8 +449,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
         COMMAND_MAP.put("listviews", new MonkeySourceNetworkViews.ListViewsCommand());
         COMMAND_MAP.put("queryview", new MonkeySourceNetworkViews.QueryViewCommand());
         COMMAND_MAP.put("getrootview", new MonkeySourceNetworkViews.GetRootViewCommand());
-        COMMAND_MAP.put("getviewswithtext",
-                        new MonkeySourceNetworkViews.GetViewsWithTextCommand());
+        COMMAND_MAP.put("getviewswithtext", new MonkeySourceNetworkViews.GetViewsWithTextCommand());
         COMMAND_MAP.put("deferreturn", new DeferReturnCommand());
     }
 
@@ -480,20 +464,20 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
 
     public static interface CommandQueue {
         /**
-         * Enqueue an event to be returned later.  This allows a
-         * command to return multiple events.  Commands using the
-         * command queue still have to return a valid event from their
-         * translateCommand method.  The returned command will be
-         * executed before anything put into the queue.
+         * Enqueue an event to be returned later. This allows a command to
+         * return multiple events. Commands using the command queue still have
+         * to return a valid event from their translateCommand method. The
+         * returned command will be executed before anything put into the queue.
          *
-         * @param e the event to be enqueued.
+         * @param e
+         *            the event to be enqueued.
          */
         public void enqueueEvent(MonkeyEvent e);
     };
 
-    // Queue of Events to be processed.  This allows commands to push
+    // Queue of Events to be processed. This allows commands to push
     // multiple events into the queue to be processed.
-    private static class CommandQueueImpl implements CommandQueue{
+    private static class CommandQueueImpl implements CommandQueue {
         private final Queue<MonkeyEvent> queuedEvents = new LinkedList<MonkeyEvent>();
 
         public void enqueueEvent(MonkeyEvent e) {
@@ -510,7 +494,8 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
         }
     };
 
-    // A holder class for a deferred return value. This allows us to defer returning the success of
+    // A holder class for a deferred return value. This allows us to defer
+    // returning the success of
     // a call until a given event has occurred.
     private static class DeferredReturn {
         public static final int ON_WINDOW_STATE_CHANGE = 1;
@@ -527,18 +512,19 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
 
         /**
          * Wait until the given event has occurred before returning the value.
+         * 
          * @return The MonkeyCommandReturn from the command that was deferred.
          */
         public MonkeyCommandReturn waitForEvent() {
-            switch(event) {
-                case ON_WINDOW_STATE_CHANGE:
-                    try {
-                        synchronized(MonkeySourceNetworkViews.class) {
-                            MonkeySourceNetworkViews.class.wait(timeout);
-                        }
-                    } catch(InterruptedException e) {
-                        Log.d(TAG, "Deferral interrupted: " + e.getMessage());
+            switch (event) {
+            case ON_WINDOW_STATE_CHANGE:
+                try {
+                    synchronized (MonkeySourceNetworkViews.class) {
+                        MonkeySourceNetworkViews.class.wait(timeout);
                     }
+                } catch (InterruptedException e) {
+                    Log.d(TAG, "Deferral interrupted: " + e.getMessage());
+                }
             }
             return deferredReturn;
         }
@@ -554,19 +540,19 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     private Socket clientSocket;
 
     public MonkeySourceNetwork(int port) throws IOException {
-        // Only bind this to local host.  This means that you can only
+        // Only bind this to local host. This means that you can only
         // talk to the monkey locally, or though adb port forwarding.
-        serverSocket = new ServerSocket(port,
-                                        0, // default backlog
-                                        InetAddress.getLocalHost());
+        serverSocket = new ServerSocket(port, 0, // default backlog
+                InetAddress.getLocalHost());
     }
 
     /**
-     * Start a network server listening on the specified port.  The
-     * network protocol is a line oriented protocol, where each line
-     * is a different command that can be run.
+     * Start a network server listening on the specified port. The network
+     * protocol is a line oriented protocol, where each line is a different
+     * command that can be run.
      *
-     * @param port the port to listen on
+     * @param port
+     *            the port to listen on
      */
     private void startServer() throws IOException {
         clientSocket = serverSocket.accept();
@@ -595,10 +581,11 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     }
 
     /**
-     * Helper function for commandLineSplit that replaces quoted
-     * charaters with their real values.
+     * Helper function for commandLineSplit that replaces quoted charaters with
+     * their real values.
      *
-     * @param input the string to do replacement on.
+     * @param input
+     *            the string to do replacement on.
      * @return the results with the characters replaced.
      */
     private static String replaceQuotedChars(String input) {
@@ -606,13 +593,14 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     }
 
     /**
-     * This function splits the given line into String parts.  It obey's quoted
+     * This function splits the given line into String parts. It obey's quoted
      * strings and returns them as a single part.
      *
-     * "This is a test" -> returns only one element
-     * This is a test -> returns four elements
+     * "This is a test" -> returns only one element This is a test -> returns
+     * four elements
      *
-     * @param line the line to parse
+     * @param line
+     *            the line to parse
      * @return the List of elements
      */
     private static List<String> commandLineSplit(String line) {
@@ -649,7 +637,8 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     /**
      * Translate the given command line into a MonkeyEvent.
      *
-     * @param commandLine the full command line given.
+     * @param commandLine
+     *            the full command line given.
      */
     private void translateCommand(String commandLine) {
         Log.d(TAG, "translateCommand: " + commandLine);
@@ -679,7 +668,6 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
         }
     }
 
-
     public MonkeyEvent getNextEvent() {
         if (!started) {
             try {
@@ -691,11 +679,11 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
             started = true;
         }
 
-        // Now, get the next command.  This call may block, but that's OK
+        // Now, get the next command. This call may block, but that's OK
         try {
             while (true) {
-                // Check to see if we have any events queued up.  If
-                // we do, use those until we have no more.  Then get
+                // Check to see if we have any events queued up. If
+                // we do, use those until we have no more. Then get
                 // more input from the user.
                 MonkeyEvent queuedEvent = commandQueue.getNextQueuedEvent();
                 if (queuedEvent != null) {
@@ -703,8 +691,10 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
                     return queuedEvent;
                 }
 
-                // Check to see if we have any returns that have been deferred. If so, now that
-                // we've run the queued commands, wait for the given event to happen (or the timeout
+                // Check to see if we have any returns that have been deferred.
+                // If so, now that
+                // we've run the queued commands, wait for the given event to
+                // happen (or the timeout
                 // to be reached), and handle the deferred MonkeyCommandReturn.
                 if (deferredReturn != null) {
                     Log.d(TAG, "Waiting for event");
@@ -743,7 +733,7 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
                     return null;
                 }
 
-                // Do comment checking here.  Comments aren't a
+                // Do comment checking here. Comments aren't a
                 // command, so we don't echo anything back to the
                 // user.
                 if (command.startsWith("#")) {
@@ -751,7 +741,8 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
                     continue;
                 }
 
-                // Translate the command line.  This will handle returning error/ok to the user
+                // Translate the command line. This will handle returning
+                // error/ok to the user
                 translateCommand(command);
             }
         } catch (IOException e) {
@@ -770,7 +761,8 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     /**
      * Returns ERROR to the user.
      *
-     * @param msg the error message to include
+     * @param msg
+     *            the error message to include
      */
     private void returnError(String msg) {
         output.print(ERROR_STR);
@@ -788,7 +780,8 @@ public class MonkeySourceNetwork implements MonkeyEventSource {
     /**
      * Returns OK to the user.
      *
-     * @param returnValue the value to return from this command.
+     * @param returnValue
+     *            the value to return from this command.
      */
     private void returnOk(String returnValue) {
         output.print(OK_STR);

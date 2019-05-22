@@ -18,7 +18,6 @@ package com.android.commands.monkey;
 
 import android.view.InputDevice;
 
-
 /**
  * monkey touch event
  */

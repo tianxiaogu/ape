@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
+	<classpathentry excluding="com/android/commands/monkey/ape/StateData.java|com/android/commands/monkey/ape/ResolvedAction.java|com/android/commands/monkey/ape/Path.java|com/android/commands/monkey/ape/PathFilter.java|com/android/commands/monkey/ape/model/GUITreeGumDiffer.java|com/android/commands/monkey/ape/naming/PropertiesNamer.java|com/android/commands/monkey/ape/naming/PropertyNamer.java|com/android/commands/monkey/ape/naming/PatchNamer.java|com/android/commands/monkey/ape/naming/BoundsPatchNamer.java" kind="src" path="src"/>
+	<classpathentry kind="src" path="reducer"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="framework/classes-full-debug.jar"/>
 	<classpathentry kind="lib" path="dalvik_stub/classes.jar"/>

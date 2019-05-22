@@ -27,8 +27,7 @@ import java.util.Set;
 public abstract class MonkeyUtils {
 
     private static final java.util.Date DATE = new java.util.Date();
-    private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat(
-        "yyyy-MM-dd HH:mm:ss.SSS ");
+    private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS ");
     private static PackageFilter sFilter;
 
     private MonkeyUtils() {
@@ -79,7 +78,8 @@ public abstract class MonkeyUtils {
         /**
          * Check whether we should run against the given package.
          *
-         * @param pkg The package name.
+         * @param pkg
+         *            The package name.
          * @return Returns true if we should run against pkg.
          */
         public boolean checkEnteringPackage(String pkg) {

@@ -71,7 +71,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
 
     private long mLastRecordedEventTime = -1;
 
-    // process scripts in line-by-line mode (true) or batch processing mode (false)
+    // process scripts in line-by-line mode (true) or batch processing mode
+    // (false)
     private boolean mReadScriptLineByLine = false;
 
     private static final boolean THIS_DEBUG = false;
@@ -80,7 +81,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
     // time in theory
     private static final long SLEEP_COMPENSATE_DIFF = 16;
 
-    // if this header is present, scripts are read and processed in line-by-line mode
+    // if this header is present, scripts are read and processed in line-by-line
+    // mode
     private static final String HEADER_LINE_BY_LINE = "linebyline";
 
     // maximum number of events that we read at one time
@@ -131,8 +133,7 @@ public class MonkeySourceScript implements MonkeyEventSource {
 
     private static final String EVENT_KEYWORD_END_FRAMERATE_CAPTURE = "EndCaptureFramerate";
 
-    private static final String EVENT_KEYWORD_START_APP_FRAMERATE_CAPTURE =
-            "StartCaptureAppFramerate";
+    private static final String EVENT_KEYWORD_START_APP_FRAMERATE_CAPTURE = "StartCaptureAppFramerate";
 
     private static final String EVENT_KEYWORD_END_APP_FRAMERATE_CAPTURE = "EndCaptureAppFramerate";
 
@@ -143,9 +144,9 @@ public class MonkeySourceScript implements MonkeyEventSource {
 
     private static int LONGPRESS_WAIT_TIME = 2000; // wait time for the long
 
-    private long mProfileWaitTime = 5000; //Wait time for each user profile
+    private long mProfileWaitTime = 5000; // Wait time for each user profile
 
-    private long mDeviceSleepTime = 30000; //Device sleep time
+    private long mDeviceSleepTime = 30000; // Device sleep time
 
     FileInputStream mFStream;
 
@@ -165,11 +166,13 @@ public class MonkeySourceScript implements MonkeyEventSource {
     /**
      * Creates a MonkeySourceScript instance.
      *
-     * @param filename The filename of the script (on the device).
-     * @param throttle The amount of time in ms to sleep between events.
+     * @param filename
+     *            The filename of the script (on the device).
+     * @param throttle
+     *            The amount of time in ms to sleep between events.
      */
-    public MonkeySourceScript(Random random, String filename, long throttle,
-            boolean randomizeThrottle, long profileWaitTime, long deviceSleepTime) {
+    public MonkeySourceScript(Random random, String filename, long throttle, boolean randomizeThrottle,
+            long profileWaitTime, long deviceSleepTime) {
         mScriptFileName = filename;
         mQ = new MonkeyEventQueue(random, throttle, randomizeThrottle);
         mProfileWaitTime = profileWaitTime;
@@ -192,7 +195,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
      * Reads the header of the script file.
      *
      * @return True if the file header could be parsed, and false otherwise.
-     * @throws IOException If there was an error reading the file.
+     * @throws IOException
+     *             If there was an error reading the file.
      */
     private boolean readHeader() throws IOException {
         mFileOpened = true;
@@ -236,7 +240,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
      * Reads a number of lines and passes the lines to be processed.
      *
      * @return The number of lines read.
-     * @throws IOException If there was an error reading the file.
+     * @throws IOException
+     *             If there was an error reading the file.
      */
     private int readLines() throws IOException {
         String line;
@@ -251,12 +256,13 @@ public class MonkeySourceScript implements MonkeyEventSource {
         return MAX_ONE_TIME_READS;
     }
 
-     /**
-      * Reads one line and processes it.
-      *
-      * @return the number of lines read
-      * @throws IOException If there was an error reading the file.
-      */
+    /**
+     * Reads one line and processes it.
+     *
+     * @return the number of lines read
+     * @throws IOException
+     *             If there was an error reading the file.
+     */
     private int readOneLine() throws IOException {
         String line = mBufferedReader.readLine();
         if (line == null) {
@@ -267,14 +273,14 @@ public class MonkeySourceScript implements MonkeyEventSource {
         return 1;
     }
 
-
-
     /**
      * Creates an event and adds it to the event queue. If the parameters are
      * not understood, they are ignored and no events are added.
      *
-     * @param s The entire string from the script file.
-     * @param args An array of arguments extracted from the script file line.
+     * @param s
+     *            The entire string from the script file.
+     * @param args
+     *            An array of arguments extracted from the script file line.
      */
     private void handleEvent(String s, String[] args) {
         // Handle key event
@@ -290,8 +296,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
                 int device = Integer.parseInt(args[6]);
                 int scancode = Integer.parseInt(args[7]);
 
-                MonkeyKeyEvent e = new MonkeyKeyEvent(downTime, eventTime, action, code, repeat,
-                        metaState, device, scancode);
+                MonkeyKeyEvent e = new MonkeyKeyEvent(downTime, eventTime, action, code, repeat, metaState, device,
+                        scancode);
                 System.out.println(" Key code " + code + "\n");
 
                 mQ.addLast(e);
@@ -302,8 +308,7 @@ public class MonkeySourceScript implements MonkeyEventSource {
         }
 
         // Handle trackball or pointer events
-        if ((s.indexOf(EVENT_KEYWORD_POINTER) >= 0 || s.indexOf(EVENT_KEYWORD_TRACKBALL) >= 0)
-                && args.length == 12) {
+        if ((s.indexOf(EVENT_KEYWORD_POINTER) >= 0 || s.indexOf(EVENT_KEYWORD_TRACKBALL) >= 0) && args.length == 12) {
             try {
                 long downTime = Long.parseLong(args[0]);
                 long eventTime = Long.parseLong(args[1]);
@@ -325,12 +330,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
                     e = new MonkeyTrackballEvent(action);
                 }
 
-                e.setDownTime(downTime)
-                        .setEventTime(eventTime)
-                        .setMetaState(metaState)
-                        .setPrecision(xPrecision, yPrecision)
-                        .setDeviceId(device)
-                        .setEdgeFlags(edgeFlags)
+                e.setDownTime(downTime).setEventTime(eventTime).setMetaState(metaState)
+                        .setPrecision(xPrecision, yPrecision).setDeviceId(device).setEdgeFlags(edgeFlags)
                         .addPointer(0, x, y, pressure, size);
                 mQ.addLast(e);
             } catch (NumberFormatException e) {
@@ -338,9 +339,9 @@ public class MonkeySourceScript implements MonkeyEventSource {
             return;
         }
 
-        // Handle trackball or multi-touch  pointer events. pointer ID is the 13th parameter
-        if ((s.indexOf(EVENT_KEYWORD_POINTER) >= 0 || s.indexOf(EVENT_KEYWORD_TRACKBALL) >= 0)
-                && args.length == 13) {
+        // Handle trackball or multi-touch pointer events. pointer ID is the
+        // 13th parameter
+        if ((s.indexOf(EVENT_KEYWORD_POINTER) >= 0 || s.indexOf(EVENT_KEYWORD_TRACKBALL) >= 0) && args.length == 13) {
             try {
                 long downTime = Long.parseLong(args[0]);
                 long eventTime = Long.parseLong(args[1]);
@@ -359,8 +360,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
                 MonkeyMotionEvent e;
                 if (s.indexOf("Pointer") > 0) {
                     if (action == MotionEvent.ACTION_POINTER_DOWN) {
-                        e = new MonkeyTouchEvent(MotionEvent.ACTION_POINTER_DOWN
-                                | (pointerId << MotionEvent.ACTION_POINTER_INDEX_SHIFT))
+                        e = new MonkeyTouchEvent(
+                                MotionEvent.ACTION_POINTER_DOWN | (pointerId << MotionEvent.ACTION_POINTER_INDEX_SHIFT))
                                         .setIntermediateNote(true);
                     } else {
                         e = new MonkeyTouchEvent(action);
@@ -374,32 +375,24 @@ public class MonkeySourceScript implements MonkeyEventSource {
                 }
 
                 if (pointerId == 1) {
-                    e.setDownTime(downTime)
-                            .setEventTime(eventTime)
-                            .setMetaState(metaState)
-                            .setPrecision(xPrecision, yPrecision)
-                            .setDeviceId(device)
-                            .setEdgeFlags(edgeFlags)
-                            .addPointer(0, mLastX[0], mLastY[0], pressure, size)
-                            .addPointer(1, x, y, pressure, size);
+                    e.setDownTime(downTime).setEventTime(eventTime).setMetaState(metaState)
+                            .setPrecision(xPrecision, yPrecision).setDeviceId(device).setEdgeFlags(edgeFlags)
+                            .addPointer(0, mLastX[0], mLastY[0], pressure, size).addPointer(1, x, y, pressure, size);
                     mLastX[1] = x;
                     mLastY[1] = y;
                 } else if (pointerId == 0) {
-                    e.setDownTime(downTime)
-                            .setEventTime(eventTime)
-                            .setMetaState(metaState)
-                            .setPrecision(xPrecision, yPrecision)
-                            .setDeviceId(device)
-                            .setEdgeFlags(edgeFlags)
+                    e.setDownTime(downTime).setEventTime(eventTime).setMetaState(metaState)
+                            .setPrecision(xPrecision, yPrecision).setDeviceId(device).setEdgeFlags(edgeFlags)
                             .addPointer(0, x, y, pressure, size);
-                     if(action == MotionEvent.ACTION_POINTER_UP) {
-                         e.addPointer(1, mLastX[1], mLastY[1]);
-                     }
-                     mLastX[0] = x;
-                     mLastY[0] = y;
+                    if (action == MotionEvent.ACTION_POINTER_UP) {
+                        e.addPointer(1, mLastX[1], mLastY[1]);
+                    }
+                    mLastX[0] = x;
+                    mLastY[0] = y;
                 }
 
-                // Dynamically adjust waiting time to ensure that simulated evnets follow
+                // Dynamically adjust waiting time to ensure that simulated
+                // evnets follow
                 // the time tap specified in the script
                 if (mReadScriptLineByLine) {
                     long curUpTime = SystemClock.uptimeMillis();
@@ -421,12 +414,9 @@ public class MonkeySourceScript implements MonkeyEventSource {
             try {
                 int rotationDegree = Integer.parseInt(args[0]);
                 int persist = Integer.parseInt(args[1]);
-                if ((rotationDegree == Surface.ROTATION_0) ||
-                    (rotationDegree == Surface.ROTATION_90) ||
-                    (rotationDegree == Surface.ROTATION_180) ||
-                    (rotationDegree == Surface.ROTATION_270)) {
-                    mQ.addLast(new MonkeyRotationEvent(rotationDegree,
-                                                       persist != 0));
+                if ((rotationDegree == Surface.ROTATION_0) || (rotationDegree == Surface.ROTATION_90)
+                        || (rotationDegree == Surface.ROTATION_180) || (rotationDegree == Surface.ROTATION_270)) {
+                    mQ.addLast(new MonkeyRotationEvent(rotationDegree, persist != 0));
                 }
             } catch (NumberFormatException e) {
             }
@@ -445,18 +435,14 @@ public class MonkeySourceScript implements MonkeyEventSource {
 
                 // Set the default parameters
                 long downTime = SystemClock.uptimeMillis();
-                MonkeyMotionEvent e1 = new MonkeyTouchEvent(MotionEvent.ACTION_DOWN)
-                        .setDownTime(downTime)
-                        .setEventTime(downTime)
-                        .addPointer(0, x, y, 1, 5);
+                MonkeyMotionEvent e1 = new MonkeyTouchEvent(MotionEvent.ACTION_DOWN).setDownTime(downTime)
+                        .setEventTime(downTime).addPointer(0, x, y, 1, 5);
                 mQ.addLast(e1);
-                if (tapDuration > 0){
+                if (tapDuration > 0) {
                     mQ.addLast(new MonkeyWaitEvent(tapDuration));
                 }
-                MonkeyMotionEvent e2 = new MonkeyTouchEvent(MotionEvent.ACTION_UP)
-                        .setDownTime(downTime)
-                        .setEventTime(downTime)
-                        .addPointer(0, x, y, 1, 5);
+                MonkeyMotionEvent e2 = new MonkeyTouchEvent(MotionEvent.ACTION_UP).setDownTime(downTime)
+                        .setEventTime(downTime).addPointer(0, x, y, 1, 5);
                 mQ.addLast(e2);
             } catch (NumberFormatException e) {
                 System.err.println("// " + e.toString());
@@ -464,7 +450,7 @@ public class MonkeySourceScript implements MonkeyEventSource {
             return;
         }
 
-        //Handle the press and hold
+        // Handle the press and hold
         if ((s.indexOf(EVENT_KEYWORD_PRESSANDHOLD) >= 0) && args.length == 3) {
             try {
                 float x = Float.parseFloat(args[0]);
@@ -474,15 +460,11 @@ public class MonkeySourceScript implements MonkeyEventSource {
                 // Set the default parameters
                 long downTime = SystemClock.uptimeMillis();
 
-                MonkeyMotionEvent e1 = new MonkeyTouchEvent(MotionEvent.ACTION_DOWN)
-                        .setDownTime(downTime)
-                        .setEventTime(downTime)
-                        .addPointer(0, x, y, 1, 5);
+                MonkeyMotionEvent e1 = new MonkeyTouchEvent(MotionEvent.ACTION_DOWN).setDownTime(downTime)
+                        .setEventTime(downTime).addPointer(0, x, y, 1, 5);
                 MonkeyWaitEvent e2 = new MonkeyWaitEvent(pressDuration);
-                MonkeyMotionEvent e3 = new MonkeyTouchEvent(MotionEvent.ACTION_UP)
-                        .setDownTime(downTime + pressDuration)
-                        .setEventTime(downTime + pressDuration)
-                        .addPointer(0, x, y, 1, 5);
+                MonkeyMotionEvent e3 = new MonkeyTouchEvent(MotionEvent.ACTION_UP).setDownTime(downTime + pressDuration)
+                        .setEventTime(downTime + pressDuration).addPointer(0, x, y, 1, 5);
                 mQ.addLast(e1);
                 mQ.addLast(e2);
                 mQ.addLast(e2);
@@ -510,30 +492,29 @@ public class MonkeySourceScript implements MonkeyEventSource {
                 float xStep = (xEnd - xStart) / stepCount;
                 float yStep = (yEnd - yStart) / stepCount;
 
-                MonkeyMotionEvent e =
-                        new MonkeyTouchEvent(MotionEvent.ACTION_DOWN).setDownTime(downTime)
-                                .setEventTime(eventTime).addPointer(0, x, y, 1, 5);
+                MonkeyMotionEvent e = new MonkeyTouchEvent(MotionEvent.ACTION_DOWN).setDownTime(downTime)
+                        .setEventTime(eventTime).addPointer(0, x, y, 1, 5);
                 mQ.addLast(e);
 
                 for (int i = 0; i < stepCount; ++i) {
                     x += xStep;
                     y += yStep;
                     eventTime = SystemClock.uptimeMillis();
-                    e = new MonkeyTouchEvent(MotionEvent.ACTION_MOVE).setDownTime(downTime)
-                        .setEventTime(eventTime).addPointer(0, x, y, 1, 5);
+                    e = new MonkeyTouchEvent(MotionEvent.ACTION_MOVE).setDownTime(downTime).setEventTime(eventTime)
+                            .addPointer(0, x, y, 1, 5);
                     mQ.addLast(e);
                 }
 
                 eventTime = SystemClock.uptimeMillis();
-                e = new MonkeyTouchEvent(MotionEvent.ACTION_UP).setDownTime(downTime)
-                    .setEventTime(eventTime).addPointer(0, x, y, 1, 5);
+                e = new MonkeyTouchEvent(MotionEvent.ACTION_UP).setDownTime(downTime).setEventTime(eventTime)
+                        .addPointer(0, x, y, 1, 5);
                 mQ.addLast(e);
             }
         }
 
         // Handle pinch or zoom action
         if ((s.indexOf(EVENT_KEYWORD_PINCH_ZOOM) >= 0) && args.length == 9) {
-            //Parse the parameters
+            // Parse the parameters
             float pt1xStart = Float.parseFloat(args[0]);
             float pt1yStart = Float.parseFloat(args[1]);
             float pt1xEnd = Float.parseFloat(args[2]);
@@ -561,12 +542,13 @@ public class MonkeySourceScript implements MonkeyEventSource {
                 float pt2xStep = (pt2xEnd - pt2xStart) / stepCount;
                 float pt2yStep = (pt2yEnd - pt2yStart) / stepCount;
 
-                mQ.addLast(new MonkeyTouchEvent(MotionEvent.ACTION_DOWN).setDownTime(downTime)
-                        .setEventTime(eventTime).addPointer(0, x1, y1, 1, 5));
+                mQ.addLast(new MonkeyTouchEvent(MotionEvent.ACTION_DOWN).setDownTime(downTime).setEventTime(eventTime)
+                        .addPointer(0, x1, y1, 1, 5));
 
-                mQ.addLast(new MonkeyTouchEvent(MotionEvent.ACTION_POINTER_DOWN
-                        | (1 << MotionEvent.ACTION_POINTER_INDEX_SHIFT)).setDownTime(downTime)
-                        .addPointer(0, x1, y1).addPointer(1, x2, y2).setIntermediateNote(true));
+                mQ.addLast(new MonkeyTouchEvent(
+                        MotionEvent.ACTION_POINTER_DOWN | (1 << MotionEvent.ACTION_POINTER_INDEX_SHIFT))
+                                .setDownTime(downTime).addPointer(0, x1, y1).addPointer(1, x2, y2)
+                                .setIntermediateNote(true));
 
                 for (int i = 0; i < stepCount; ++i) {
                     x1 += pt1xStep;
@@ -576,13 +558,11 @@ public class MonkeySourceScript implements MonkeyEventSource {
 
                     eventTime = SystemClock.uptimeMillis();
                     mQ.addLast(new MonkeyTouchEvent(MotionEvent.ACTION_MOVE).setDownTime(downTime)
-                            .setEventTime(eventTime).addPointer(0, x1, y1, 1, 5).addPointer(1, x2,
-                                    y2, 1, 5));
+                            .setEventTime(eventTime).addPointer(0, x1, y1, 1, 5).addPointer(1, x2, y2, 1, 5));
                 }
                 eventTime = SystemClock.uptimeMillis();
-                mQ.addLast(new MonkeyTouchEvent(MotionEvent.ACTION_POINTER_UP)
-                        .setDownTime(downTime).setEventTime(eventTime).addPointer(0, x1, y1)
-                        .addPointer(1, x2, y2));
+                mQ.addLast(new MonkeyTouchEvent(MotionEvent.ACTION_POINTER_UP).setDownTime(downTime)
+                        .setEventTime(eventTime).addPointer(0, x1, y1).addPointer(1, x2, y2));
             }
         }
 
@@ -620,29 +600,30 @@ public class MonkeySourceScript implements MonkeyEventSource {
             return;
         }
 
-        //Handle the device wake up event
-        if (s.indexOf(EVENT_KEYWORD_DEVICE_WAKEUP) >= 0){
+        // Handle the device wake up event
+        if (s.indexOf(EVENT_KEYWORD_DEVICE_WAKEUP) >= 0) {
             String pkg_name = "com.google.android.powerutil";
             String cl_name = "com.google.android.powerutil.WakeUpScreen";
             long deviceSleepTime = mDeviceSleepTime;
 
-            //Start the wakeUpScreen test activity to turn off the screen.
+            // Start the wakeUpScreen test activity to turn off the screen.
             ComponentName mApp = new ComponentName(pkg_name, cl_name);
             mQ.addLast(new MonkeyActivityEvent(mApp, deviceSleepTime));
 
-            //inject the special key for the wakeUpScreen test activity.
+            // inject the special key for the wakeUpScreen test activity.
             mQ.addLast(new MonkeyKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_0));
             mQ.addLast(new MonkeyKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_0));
 
-            //Add the wait event after the device sleep event so that the monkey
-            //can continue after the device wake up.
+            // Add the wait event after the device sleep event so that the
+            // monkey
+            // can continue after the device wake up.
             mQ.addLast(new MonkeyWaitEvent(deviceSleepTime + 3000));
 
-            //Insert the menu key to unlock the screen
+            // Insert the menu key to unlock the screen
             mQ.addLast(new MonkeyKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MENU));
             mQ.addLast(new MonkeyKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MENU));
 
-            //Insert the back key to dismiss the test activity
+            // Insert the back key to dismiss the test activity
             mQ.addLast(new MonkeyKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK));
             mQ.addLast(new MonkeyKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK));
 
@@ -668,7 +649,6 @@ public class MonkeySourceScript implements MonkeyEventSource {
             }
             return;
         }
-
 
         // Handle the profile wait time
         if (s.indexOf(EVENT_KEYWORD_PROFILE_WAIT) >= 0) {
@@ -702,35 +682,35 @@ public class MonkeySourceScript implements MonkeyEventSource {
             mQ.addLast(e);
         }
 
-        //The power log event is mainly for the automated power framework
+        // The power log event is mainly for the automated power framework
         if (s.indexOf(EVENT_KEYWORD_POWERLOG) >= 0 && args.length > 0) {
             String power_log_type = args[0];
             String test_case_status;
 
-            if (args.length == 1){
+            if (args.length == 1) {
                 MonkeyPowerEvent e = new MonkeyPowerEvent(power_log_type);
                 mQ.addLast(e);
-            } else if (args.length == 2){
+            } else if (args.length == 2) {
                 test_case_status = args[1];
                 MonkeyPowerEvent e = new MonkeyPowerEvent(power_log_type, test_case_status);
                 mQ.addLast(e);
             }
         }
 
-        //Write power log to sdcard
+        // Write power log to sdcard
         if (s.indexOf(EVENT_KEYWORD_WRITEPOWERLOG) >= 0) {
             MonkeyPowerEvent e = new MonkeyPowerEvent();
             mQ.addLast(e);
         }
 
-        //Run the shell command
+        // Run the shell command
         if (s.indexOf(EVENT_KEYWORD_RUNCMD) >= 0 && args.length == 1) {
             String cmd = args[0];
             MonkeyCommandEvent e = new MonkeyCommandEvent(cmd);
             mQ.addLast(e);
         }
 
-        //Input the string through the shell command
+        // Input the string through the shell command
         if (s.indexOf(EVENT_KEYWORD_INPUT_STRING) >= 0 && args.length == 1) {
             String input = args[0];
             String cmd = "input text " + input;
@@ -767,14 +747,14 @@ public class MonkeySourceScript implements MonkeyEventSource {
             return;
         }
 
-
     }
 
     /**
      * Extracts an event and a list of arguments from a line. If the line does
      * not match the format required, it is ignored.
      *
-     * @param line A string in the form {@code cmd(arg1,arg2,arg3)}.
+     * @param line
+     *            A string in the form {@code cmd(arg1,arg2,arg3)}.
      */
     private void processLine(String line) {
         int index1 = line.indexOf('(');
@@ -796,7 +776,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
     /**
      * Closes the script file.
      *
-     * @throws IOException If there was an error closing the file.
+     * @throws IOException
+     *             If there was an error closing the file.
      */
     private void closeFile() throws IOException {
         mFileOpened = false;
@@ -815,7 +796,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
      * events or reads until the end of the file. If no events are read, then
      * the script is closed.
      *
-     * @throws IOException If there was an error reading the file.
+     * @throws IOException
+     *             If there was an error reading the file.
      */
     private void readNextBatch() throws IOException {
         int linesRead = 0;
@@ -844,7 +826,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
      * Sleep for a period of given time. Used to introduce latency between
      * events.
      *
-     * @param time The amount of time to sleep in ms
+     * @param time
+     *            The amount of time to sleep in ms
      */
     private void needSleep(long time) {
         if (time < 1) {
@@ -886,7 +869,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
      * Adjust key downtime and eventtime according to both recorded values and
      * current system time.
      *
-     * @param e A KeyEvent
+     * @param e
+     *            A KeyEvent
      */
     private void adjustKeyEventTime(MonkeyKeyEvent e) {
         if (e.getEventTime() < 0) {
@@ -922,7 +906,8 @@ public class MonkeySourceScript implements MonkeyEventSource {
     /**
      * Adjust motion downtime and eventtime according to current system time.
      *
-     * @param e A MotionEvent
+     * @param e
+     *            A MotionEvent
      */
     private void adjustMotionEventTime(MonkeyMotionEvent e) {
         long thisEventTime = SystemClock.uptimeMillis();

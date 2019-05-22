@@ -16,7 +16,27 @@
 
 package com.android.commands.monkey;
 
-import android.app.ActivityManagerNative;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+import com.android.commands.monkey.ape.Agent;
+import com.android.commands.monkey.ape.AndroidDevice;
+import com.android.commands.monkey.ape.utils.Config;
+import com.android.commands.monkey.ape.utils.Logger;
+
 import android.app.IActivityController;
 import android.app.IActivityManager;
 import android.content.ComponentName;
@@ -34,22 +54,6 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.view.IWindowManager;
 import android.view.Surface;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
 
 /**
  * Application that injects random key events and other actions into the system.
@@ -118,36 +122,36 @@ public class Monkey {
     private boolean mRequestAnrTraces = false;
 
     /**
-     * This is set by the ActivityController thread to request a
-     * "dumpsys meminfo"
+     * This is set by the ActivityController thread to request a "dumpsys
+     * meminfo"
      */
     private boolean mRequestDumpsysMemInfo = false;
 
     /**
-     * This is set by the ActivityController thread to request a
-     * bugreport after ANR
+     * This is set by the ActivityController thread to request a bugreport after
+     * ANR
      */
     private boolean mRequestAnrBugreport = false;
 
     /**
-     * This is set by the ActivityController thread to request a
-     * bugreport after a system watchdog report
+     * This is set by the ActivityController thread to request a bugreport after
+     * a system watchdog report
      */
     private boolean mRequestWatchdogBugreport = false;
 
     /**
-     * Synchronization for the ActivityController callback to block
-     * until we are done handling the reporting of the watchdog error.
+     * Synchronization for the ActivityController callback to block until we are
+     * done handling the reporting of the watchdog error.
      */
     private boolean mWatchdogWaiting = false;
 
     /**
-     * This is set by the ActivityController thread to request a
-     * bugreport after java application crash
+     * This is set by the ActivityController thread to request a bugreport after
+     * java application crash
      */
     private boolean mRequestAppCrashBugreport = false;
 
-    /**Request the bugreport based on the mBugreportFrequency. */
+    /** Request the bugreport based on the mBugreportFrequency. */
     private boolean mGetPeriodicBugreport = false;
 
     /**
@@ -187,7 +191,10 @@ public class Monkey {
     /** The delay between event inputs **/
     long mThrottle = 0;
 
-    /** Whether to randomize each throttle (0-mThrottle ms) inserted between events. */
+    /**
+     * Whether to randomize each throttle (0-mThrottle ms) inserted between
+     * events.
+     */
     boolean mRandomizeThrottle = false;
 
     /** The number of iterations **/
@@ -238,9 +245,16 @@ public class Monkey {
 
     float[] mFactors = new float[MonkeySourceRandom.FACTORZ_COUNT];
 
-    private boolean mUseUiAutomator;
-    private boolean mUseUiAutomatorDFS;
-    
+    private boolean mUseApe;
+    private boolean mApeCleanApp;
+    private String mApeAgent;
+    private File mOutputDirectory;
+    private HashSet<Integer> mUids = new HashSet<Integer>();
+    private long mRunningMillis = -1;
+    private long mEndTime;
+
+    static long ONE_MINUTE_IN_MILLISECOND = 1000 * 60;
+
     MonkeyEventSource mEventSource;
 
     private MonkeyNetworkMonitor mNetworkMonitor = new MonkeyNetworkMonitor();
@@ -257,18 +271,17 @@ public class Monkey {
      */
     private class ActivityController extends IActivityController.Stub {
         public boolean activityStarting(Intent intent, String pkg) {
-            boolean allow = MonkeyUtils.getPackageFilter().checkEnteringPackage(pkg)
-                    || (DEBUG_ALLOW_ANY_STARTS != 0);
+            boolean allow = MonkeyUtils.getPackageFilter().checkEnteringPackage(pkg) || (DEBUG_ALLOW_ANY_STARTS != 0);
             if (mVerbose > 0) {
                 // StrictMode's disk checks end up catching this on
                 // userdebug/eng builds due to PrintStream going to a
                 // FileOutputStream in the end (perhaps only when
-                // redirected to a file?)  So we allow disk writes
+                // redirected to a file?) So we allow disk writes
                 // around this region for the monkey to minimize
                 // harmless dropbox uploads from monkeys.
                 StrictMode.ThreadPolicy savedPolicy = StrictMode.allowThreadDiskWrites();
-                System.out.println("    // " + (allow ? "Allowing" : "Rejecting") + " start of "
-                        + intent + " in package " + pkg);
+                System.out.println(
+                        "    // " + (allow ? "Allowing" : "Rejecting") + " start of " + intent + " in package " + pkg);
                 StrictMode.setThreadPolicy(savedPolicy);
             }
             currentPackage = pkg;
@@ -279,12 +292,10 @@ public class Monkey {
         public boolean activityResuming(String pkg) {
             StrictMode.ThreadPolicy savedPolicy = StrictMode.allowThreadDiskWrites();
             System.out.println("    // activityResuming(" + pkg + ")");
-            boolean allow = MonkeyUtils.getPackageFilter().checkEnteringPackage(pkg)
-                    || (DEBUG_ALLOW_ANY_RESTARTS != 0);
+            boolean allow = MonkeyUtils.getPackageFilter().checkEnteringPackage(pkg) || (DEBUG_ALLOW_ANY_RESTARTS != 0);
             if (!allow) {
                 if (mVerbose > 0) {
-                    System.out.println("    // " + (allow ? "Allowing" : "Rejecting")
-                            + " resume of package " + pkg);
+                    System.out.println("    // " + (allow ? "Allowing" : "Rejecting") + " resume of package " + pkg);
                 }
             }
             currentPackage = pkg;
@@ -292,9 +303,8 @@ public class Monkey {
             return allow;
         }
 
-        public boolean appCrashed(String processName, int pid,
-                String shortMsg, String longMsg,
-                long timeMillis, String stackTrace) {
+        public boolean appCrashed(String processName, int pid, String shortMsg, String longMsg, long timeMillis,
+                String stackTrace) {
             StrictMode.ThreadPolicy savedPolicy = StrictMode.allowThreadDiskWrites();
             System.err.println("// CRASH: " + processName + " (pid " + pid + ")");
             System.err.println("// Short Msg: " + shortMsg);
@@ -310,7 +320,7 @@ public class Monkey {
                     if (!mIgnoreCrashes) {
                         mAbort = true;
                     }
-                    if (mRequestBugreport){
+                    if (mRequestBugreport) {
                         mRequestAppCrashBugreport = true;
                         mReportProcessName = processName;
                     }
@@ -334,9 +344,9 @@ public class Monkey {
                 mRequestAnrTraces = true;
                 mRequestDumpsysMemInfo = true;
                 mRequestProcRank = true;
-                if (mRequestBugreport){
-                  mRequestAnrBugreport = true;
-                  mReportProcessName = processName;
+                if (mRequestBugreport) {
+                    mRequestAnrBugreport = true;
+                    mReportProcessName = processName;
                 }
             }
             if (!mIgnoreTimeouts) {
@@ -371,6 +381,118 @@ public class Monkey {
             }
             return (mKillProcessAfterError) ? -1 : 1;
         }
+    }
+
+    private class ApeActivityController extends ActivityController {
+
+        @Override
+        public boolean activityStarting(Intent intent, String pkg) {
+            if (mUseApe) {
+                Agent agent = ((MonkeySourceApe) mEventSource).getAgent();
+                if (agent != null) {
+                    agent.activityStarting(intent, pkg);
+                }
+                // com.android.systemui/.recents.RecentsActivity
+                if (pkg.equals("com.android.systemui")) {
+                    if (intent.getComponent().getClassName().equals("com.android.systemui.recents.RecentsActivity")) {
+                        Logger.iprintln("Enable RecentsActivity");
+                        return true;
+                    }
+                }
+                // com.android.packageinstaller/.permission.ui.GrantPermissionsActivity
+                if (pkg.equals("com.android.packageinstaller")) {
+                    if (intent.getComponent().getClassName()
+                            .equals("com.android.packageinstaller.permission.ui.GrantPermissionsActivity")) {
+                        Logger.iprintln("Request permission: " + intent);
+                        if (mUseApe) {
+                            ((MonkeySourceApe) mEventSource).stopPackages();
+                            ((MonkeySourceApe) mEventSource).grantRuntimePermissions("GrantPermissionsActivity");
+                        }
+                    }
+                }
+            }
+            return super.activityStarting(intent, pkg);
+        }
+
+        @Override
+        public boolean activityResuming(String pkg) {
+            if (mUseApe) {
+                Agent agent = ((MonkeySourceApe) mEventSource).getAgent();
+                if (agent != null) {
+                    agent.activityResuming(pkg);
+                }
+            }
+            return super.activityResuming(pkg);
+        }
+
+        @Override
+        public boolean appCrashed(String processName, int pid, String shortMsg, String longMsg, long timeMillis,
+                String stackTrace) {
+            // return super.appCrashed(processName, pid, shortMsg, longMsg,
+            // timeMillis, stackTrace);
+            StrictMode.ThreadPolicy savedPolicy = StrictMode.allowThreadDiskWrites();
+            Logger.println("// CRASH: " + processName + " (pid " + pid + ") (elapsed nanos: "
+                    + SystemClock.elapsedRealtimeNanos() + ")");
+            Logger.println("// Short Msg: " + shortMsg);
+            Logger.println("// Long Msg: " + longMsg);
+            Logger.println("// Build Label: " + Build.FINGERPRINT);
+            Logger.println("// Build Changelist: " + Build.VERSION.INCREMENTAL);
+            Logger.println("// Build Time: " + Build.TIME);
+            Logger.println("// " + stackTrace.replace("\n", "\n" + Logger.TAG + "// "));
+
+            if (mEventSource instanceof MonkeySourceApe) {
+                Agent agent = ((MonkeySourceApe) mEventSource).getAgent();
+                if (agent != null) {
+                    agent.appCrashed(processName, pid, shortMsg, longMsg, timeMillis, stackTrace);
+                }
+            }
+
+            StrictMode.setThreadPolicy(savedPolicy);
+
+            if (!mIgnoreCrashes || mRequestBugreport) {
+                synchronized (Monkey.this) {
+                    if (!mIgnoreCrashes) {
+                        mAbort = true;
+                    }
+                    if (mRequestBugreport) {
+                        mRequestAppCrashBugreport = true;
+                        mReportProcessName = processName;
+                    }
+                }
+                return !mKillProcessAfterError;
+            }
+            return false;
+
+        }
+
+        @Override
+        public int appEarlyNotResponding(String processName, int pid, String annotation) {
+            if (mUseApe) {
+                Agent agent = ((MonkeySourceApe) mEventSource).getAgent();
+                if (agent != null) {
+                    agent.appEarlyNotResponding(processName, pid, annotation);
+                }
+            }
+            return super.appEarlyNotResponding(processName, pid, annotation);
+        }
+
+        @Override
+        public int appNotResponding(String processName, int pid, String processStats) {
+            if (mUseApe) {
+                Agent agent = ((MonkeySourceApe) mEventSource).getAgent();
+                if (agent != null) {
+                    agent.appNotResponding(processName, pid, processStats);
+                }
+            }
+            return super.appNotResponding(processName, pid, processStats);
+        }
+
+        @Override
+        public int systemNotResponding(String message) {
+            // TODO Auto-generated method stub
+            return super.systemNotResponding(message);
+        }
+
     }
 
     /**
@@ -410,9 +532,11 @@ public class Monkey {
      * TODO: Use ProcessBuilder & redirectErrorStream(true) to capture both
      * streams (might be important for some command lines)
      *
-     * @param reportName Simple tag that will print before the report and in
-     *            various annotations.
-     * @param command Command line to execute.
+     * @param reportName
+     *            Simple tag that will print before the report and in various
+     *            annotations.
+     * @param command
+     *            Command line to execute.
      */
     private void commandLineReport(String reportName, String command) {
         System.err.println(reportName + ":");
@@ -425,9 +549,8 @@ public class Monkey {
             java.lang.Process p = Runtime.getRuntime().exec(command);
 
             if (mRequestBugreport) {
-                logOutput =
-                        new BufferedWriter(new FileWriter(new File(Environment
-                                .getLegacyExternalStorageDirectory(), reportName), true));
+                logOutput = new BufferedWriter(
+                        new FileWriter(new File(Environment.getLegacyExternalStorageDirectory(), reportName), true));
             }
             // pipe everything from process stdout -> System.err
             InputStream inStream = p.getInputStream();
@@ -459,10 +582,10 @@ public class Monkey {
     private void writeScriptLog(int count) {
         // TO DO: Add the script file name to the log.
         try {
-            Writer output = new BufferedWriter(new FileWriter(new File(
-                    Environment.getLegacyExternalStorageDirectory(), "scriptlog.txt"), true));
-            output.write("iteration: " + count + " time: "
-                    + MonkeyUtils.toCalendarTime(System.currentTimeMillis()) + "\n");
+            Writer output = new BufferedWriter(
+                    new FileWriter(new File(Environment.getLegacyExternalStorageDirectory(), "scriptlog.txt"), true));
+            output.write(
+                    "iteration: " + count + " time: " + MonkeyUtils.toCalendarTime(System.currentTimeMillis()) + "\n");
             output.close();
         } catch (IOException e) {
             System.err.println(e.toString());
@@ -479,20 +602,28 @@ public class Monkey {
     /**
      * Command-line entry point.
      *
-     * @param args The command-line arguments
+     * @param args
+     *            The command-line arguments
      */
     public static void main(String[] args) {
         // Set the process name showing in "ps" or "top"
         Process.setArgV0("com.android.commands.monkey");
-
-        int resultCode = (new Monkey()).run(args);
-        System.exit(resultCode);
+        try {
+            int resultCode = (new Monkey()).run(args);
+            System.exit(resultCode);
+        } catch (Throwable e) {
+            Logger.println("Internal error");
+            e.printStackTrace();
+            Logger.println("Please report this bug to developers.");
+            System.exit(1);
+        }
     }
 
     /**
      * Run the command!
      *
-     * @param args The command-line arguments
+     * @param args
+     *            The command-line arguments
      * @return Returns a posix-style result code. 0 for no error.
      */
     private int run(String[] args) {
@@ -508,6 +639,8 @@ public class Monkey {
         mCount = 1000;
         mSeed = 0;
         mThrottle = 0;
+
+        mRunningMillis = -1;
 
         // prepare for command-line processing
         mArgs = args;
@@ -559,24 +692,38 @@ public class Monkey {
             return -4;
         }
 
+        // {
+        // Set<String> packageNames = new HashSet<>();
+        // for (ComponentName cn : mMainApps) {
+        // packageNames.add(cn.getPackageName());
+        // }
+        // try {
+        // ComponentName cn = new ComponentName("io.appium.android.apis",
+        // "io.appium.android.apis.app.DeviceAdminSample$DeviceAdminSampleReceiver");
+        // mDm.setLockTaskPackages(cn, packageNames.toArray(new
+        // String[packageNames.size()]));
+        // } catch (RemoteException e) {
+        // e.printStackTrace();
+        // throw new RuntimeException(e);
+        // }
+        // }
+
         mRandom = new Random(mSeed);
 
         if (mScriptFileNames != null && mScriptFileNames.size() == 1) {
             // script mode, ignore other options
-            mEventSource = new MonkeySourceScript(mRandom, mScriptFileNames.get(0), mThrottle,
-                    mRandomizeThrottle, mProfileWaitTime, mDeviceSleepTime);
+            mEventSource = new MonkeySourceScript(mRandom, mScriptFileNames.get(0), mThrottle, mRandomizeThrottle,
+                    mProfileWaitTime, mDeviceSleepTime);
             mEventSource.setVerbose(mVerbose);
 
             mCountEvents = false;
         } else if (mScriptFileNames != null && mScriptFileNames.size() > 1) {
             if (mSetupFileName != null) {
-                mEventSource = new MonkeySourceRandomScript(mSetupFileName,
-                        mScriptFileNames, mThrottle, mRandomizeThrottle, mRandom,
-                        mProfileWaitTime, mDeviceSleepTime, mRandomizeScript);
+                mEventSource = new MonkeySourceRandomScript(mSetupFileName, mScriptFileNames, mThrottle,
+                        mRandomizeThrottle, mRandom, mProfileWaitTime, mDeviceSleepTime, mRandomizeScript);
                 mCount++;
             } else {
-                mEventSource = new MonkeySourceRandomScript(mScriptFileNames,
-                        mThrottle, mRandomizeThrottle, mRandom,
+                mEventSource = new MonkeySourceRandomScript(mScriptFileNames, mThrottle, mRandomizeThrottle, mRandom,
                         mProfileWaitTime, mDeviceSleepTime, mRandomizeScript);
             }
             mEventSource.setVerbose(mVerbose);
@@ -589,31 +736,27 @@ public class Monkey {
                 return -5;
             }
             mCount = Integer.MAX_VALUE;
-        } else if (mUseUiAutomator) {
-            mEventSource = new MonkeySourceRandomUiAutomator(mRandom, mMainApps,
-                    mThrottle, mRandomizeThrottle, mPermissionTargetSystem);
+        } else if (mUseApe) {
+            AndroidDevice.initializeAndroidDevice(mAm, mWm, mPm);
+            AndroidDevice.checkInteractive();
+            mEventSource = new MonkeySourceApe(mRandom, mMainApps, mThrottle,
+                    mRandomizeThrottle, mPermissionTargetSystem, mOutputDirectory);
             mEventSource.setVerbose(mVerbose);
-            // set any of the factors that has been set
-            for (int i = 0; i < MonkeySourceRandom.FACTORZ_COUNT; i++) {
-                if (mFactors[i] <= 0.0f) {
-                    ((MonkeySourceRandomUiAutomator) mEventSource).setFactors(i, mFactors[i]);
+            if (mApeCleanApp) {
+                for (ComponentName cn : mMainApps) {
+                    String packageName = cn.getPackageName();
+                    AndroidDevice.stopPackage(packageName);
+                    String[] permissions = AndroidDevice.getGrantedPermissions(packageName);
+                    AndroidDevice.clearPackage(packageName, permissions);
                 }
             }
-            // in random mode, we start with a random activity
-            ((MonkeySourceRandomUiAutomator) mEventSource).generateActivity();
-        } else if (mUseUiAutomatorDFS) {
-            mEventSource = new MonkeySourceUiAutomatorDFS(mRandom, mMainApps,
-                    mThrottle, mRandomizeThrottle, mPermissionTargetSystem);
-            mEventSource.setVerbose(mVerbose);
-            // in random mode, we start with a random activity
-            ((MonkeySourceUiAutomatorDFS) mEventSource).generateActivity();
         } else {
             // random source by default
             if (mVerbose >= 2) { // check seeding performance
                 System.out.println("// Seeded: " + mSeed);
             }
-            mEventSource = new MonkeySourceRandom(mRandom, mMainApps,
-                    mThrottle, mRandomizeThrottle, mPermissionTargetSystem);
+            mEventSource = new MonkeySourceRandom(mRandom, mMainApps, mThrottle, mRandomizeThrottle,
+                    mPermissionTargetSystem);
             mEventSource.setVerbose(mVerbose);
             // set any of the factors that has been set
             for (int i = 0; i < MonkeySourceRandom.FACTORZ_COUNT; i++) {
@@ -644,17 +787,12 @@ public class Monkey {
         } finally {
             // Release the rotation lock if it's still held and restore the
             // original orientation.
-            new MonkeyRotationEvent(Surface.ROTATION_0, false).injectEvent(
-                mWm, mAm, mVerbose);
+            new MonkeyRotationEvent(Surface.ROTATION_0, false).injectEvent(mWm, mAm, mVerbose);
         }
         mNetworkMonitor.stop();
 
-        if (mUseUiAutomator) {
-            ((MonkeySourceRandomUiAutomator) mEventSource).disconnect();
-        }
-
-        if (mUseUiAutomatorDFS) {
-            ((MonkeySourceUiAutomatorDFS) mEventSource).disconnect();
+        if (this.mEventSource instanceof MonkeySourceApe) {
+            ((MonkeySourceApe) this.mEventSource).tearDown();
         }
 
         synchronized (this) {
@@ -662,7 +800,7 @@ public class Monkey {
                 reportAnrTraces();
                 mRequestAnrTraces = false;
             }
-            if (mRequestAnrBugreport){
+            if (mRequestAnrBugreport) {
                 System.out.println("Print the anr report");
                 getBugreport("anr_" + mReportProcessName + "_");
                 mRequestAnrBugreport = false;
@@ -672,7 +810,7 @@ public class Monkey {
                 getBugreport("anr_watchdog_");
                 mRequestWatchdogBugreport = false;
             }
-            if (mRequestAppCrashBugreport){
+            if (mRequestAppCrashBugreport) {
                 getBugreport("app_crash" + mReportProcessName + "_");
                 mRequestAppCrashBugreport = false;
             }
@@ -680,7 +818,7 @@ public class Monkey {
                 reportDumpsysMemInfo();
                 mRequestDumpsysMemInfo = false;
             }
-            if (mRequestPeriodicBugreport){
+            if (mRequestPeriodicBugreport) {
                 getBugreport("Bugreport_");
                 mRequestPeriodicBugreport = false;
             }
@@ -698,7 +836,8 @@ public class Monkey {
         }
 
         try {
-            mAm.setActivityController(null);
+            // mAm.setActivityController(null);
+            ApeAPIAdapter.setActivityController(mAm, null);
             mNetworkMonitor.unregister(mAm);
         } catch (RemoteException e) {
             // just in case this was latent (after mCount cycles), make sure
@@ -726,8 +865,8 @@ public class Monkey {
         mNetworkMonitor.dump();
 
         if (crashedAtCycle < mCount - 1) {
-            System.err.println("** System appears to have crashed at event " + crashedAtCycle
-                    + " of " + mCount + " using seed " + mSeed);
+            System.err.println("** System appears to have crashed at event " + crashedAtCycle + " of " + mCount
+                    + " using seed " + mSeed);
             return crashedAtCycle;
         } else {
             if (mVerbose > 0) {
@@ -748,10 +887,10 @@ public class Monkey {
             showUsage();
             return false;
         }
+        Set<String> validPackages = new HashSet<>();
 
         try {
             String opt;
-            Set<String> validPackages = new HashSet<>();
             while ((opt = nextOption()) != null) {
                 if (opt.equals("-s")) {
                     mSeed = nextOptionLong("Seed");
@@ -775,10 +914,20 @@ public class Monkey {
                     mKillProcessAfterError = true;
                 } else if (opt.equals("--hprof")) {
                     mGenerateHprof = true;
-                } else if (opt.equals("--uiautomator")) {
-                    mUseUiAutomator = true;
-                } else if (opt.equals("--uiautomator-dfs")) {
-                    mUseUiAutomatorDFS = true;
+                } else if (opt.equals("--ape")) {
+                    mUseApe = true;
+                    mApeAgent = nextOptionData();
+                    Config.set("ape.agentType", mApeAgent);
+                } else if (opt.equals("--ape-model")) {
+                    String modelFile = nextOptionData();
+                    Config.set("ape.modelFile", modelFile);
+                } else if (opt.equals("--ape-replay")) {
+                    String logFile = nextOptionData();
+                    Config.set("ape.replayLog", logFile);
+                } else if (opt.equals("--ape-clean")) {
+                    mApeCleanApp = true;
+                } else if (opt.equals("--running-minutes")) {
+                    mRunningMillis = nextOptionLong("Running Minutes") * ONE_MINUTE_IN_MILLISECOND;
                 } else if (opt.equals("--pct-touch")) {
                     int i = MonkeySourceRandom.FACTOR_TOUCH;
                     mFactors[i] = -nextOptionLong("touch events percentage");
@@ -834,21 +983,20 @@ public class Monkey {
                 } else if (opt.equals("-f")) {
                     mScriptFileNames.add(nextOptionData());
                 } else if (opt.equals("--profile-wait")) {
-                    mProfileWaitTime = nextOptionLong("Profile delay" +
-                                " (in milliseconds) to wait between user action");
+                    mProfileWaitTime = nextOptionLong(
+                            "Profile delay" + " (in milliseconds) to wait between user action");
                 } else if (opt.equals("--device-sleep-time")) {
-                    mDeviceSleepTime = nextOptionLong("Device sleep time" +
-                                                      "(in milliseconds)");
+                    mDeviceSleepTime = nextOptionLong("Device sleep time" + "(in milliseconds)");
                 } else if (opt.equals("--randomize-script")) {
                     mRandomizeScript = true;
                 } else if (opt.equals("--script-log")) {
                     mScriptLog = true;
                 } else if (opt.equals("--bugreport")) {
                     mRequestBugreport = true;
-                } else if (opt.equals("--periodic-bugreport")){
+                } else if (opt.equals("--periodic-bugreport")) {
                     mGetPeriodicBugreport = true;
                     mBugreportFrequency = nextOptionLong("Number of iterations");
-                } else if (opt.equals("--permission-target-system")){
+                } else if (opt.equals("--permission-target-system")) {
                     mPermissionTargetSystem = true;
                 } else if (opt.equals("-h")) {
                     showUsage();
@@ -859,6 +1007,7 @@ public class Monkey {
                     return false;
                 }
             }
+
             MonkeyUtils.getPackageFilter().addValidPackages(validPackages);
         } catch (RuntimeException ex) {
             System.err.println("** Error: " + ex.toString());
@@ -869,30 +1018,81 @@ public class Monkey {
         // If a server port hasn't been specified, we need to specify
         // a count
         if (mServerPort == -1) {
-            String countStr = nextArg();
-            if (countStr == null) {
-                System.err.println("** Error: Count not specified");
-                showUsage();
-                return false;
-            }
+            if (mRunningMillis < 0) { // Ignore count if running time i
+                String countStr = nextArg();
+                if (countStr == null) {
+                    System.err.println("** Error: Count not specified");
+                    showUsage();
+                    return false;
+                }
 
-            try {
-                mCount = Integer.parseInt(countStr);
-            } catch (NumberFormatException e) {
-                System.err.println("** Error: Count is not a number");
-                showUsage();
-                return false;
+                try {
+                    mCount = Integer.parseInt(countStr);
+                } catch (NumberFormatException e) {
+                    System.err.println("** Error: Count is not a number");
+                    showUsage();
+                    return false;
+                }
             }
+        }
+
+        if (mUseApe) {
+            mIgnoreNativeCrashes = true;
+        }
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append("/sdcard/sata-");
+            for (String pkg : validPackages) {
+                sb.append(pkg);
+                sb.append('-');
+            }
+            if (mUseApe) {
+                sb.append("ape-");
+                sb.append(mApeAgent);
+            } else {
+                sb.append("monkey-");
+            }
+            if (mRunningMillis > 0) {
+                sb.append("-running-minutes-");
+                sb.append(mRunningMillis / ONE_MINUTE_IN_MILLISECOND);
+            } else {
+                sb.append("-count-");
+                sb.append(mCount);
+            }
+            mOutputDirectory = createOutputDirectory(sb.toString());
         }
 
         return true;
     }
 
+    private File createOutputDirectory(String string) {
+        File file = new File(string);
+        if (file.exists()) {
+            int count = 1;
+            File newFile = new File(file.getAbsolutePath() + "." + count);
+            while (newFile.exists()) {
+                count++;
+                newFile = new File(file.getAbsolutePath() + "." + count);
+            }
+            Logger.format("Rename %s to %s", file, newFile);
+            file.renameTo(newFile);
+        }
+        if (file.exists()) {
+            throw new IllegalStateException("Cannot rename file " + file);
+        }
+        if (!file.mkdirs()) {
+            throw new IllegalStateException("Cannot mkdirs at file " + file);
+        }
+        return file;
+    }
+
     /**
      * Load a list of package names from a file.
      *
-     * @param fileName The file name, with package names separated by new line.
-     * @param list The destination list.
+     * @param fileName
+     *            The file name, with package names separated by new line.
+     * @param list
+     *            The destination list.
      * @return Returns false if any error occurs.
      */
     private static boolean loadPackageListFromFile(String fileName, Set<String> list) {
@@ -934,14 +1134,12 @@ public class Monkey {
             return false;
         }
         Set<String> validPackages = new HashSet<>();
-        if ((mPkgWhitelistFile != null)
-                && (!loadPackageListFromFile(mPkgWhitelistFile, validPackages))) {
+        if ((mPkgWhitelistFile != null) && (!loadPackageListFromFile(mPkgWhitelistFile, validPackages))) {
             return false;
         }
         MonkeyUtils.getPackageFilter().addValidPackages(validPackages);
         Set<String> invalidPackages = new HashSet<>();
-        if ((mPkgBlacklistFile != null)
-                && (!loadPackageListFromFile(mPkgBlacklistFile, invalidPackages))) {
+        if ((mPkgBlacklistFile != null) && (!loadPackageListFromFile(mPkgBlacklistFile, invalidPackages))) {
             return false;
         }
         MonkeyUtils.getPackageFilter().addInvalidPackages(invalidPackages);
@@ -963,29 +1161,33 @@ public class Monkey {
      * @return Returns true if all system interfaces were available.
      */
     private boolean getSystemInterfaces() {
-        mAm = ActivityManagerNative.getDefault();
+        // mAm = ActivityManagerNative.getDefault();
+        mAm = ApeAPIAdapter.getActivityManager();
         if (mAm == null) {
-            System.err.println("** Error: Unable to connect to activity manager; is the system "
-                    + "running?");
+            System.err.println("** Error: Unable to connect to activity manager; is the system " + "running?");
             return false;
         }
 
         mWm = IWindowManager.Stub.asInterface(ServiceManager.getService("window"));
         if (mWm == null) {
-            System.err.println("** Error: Unable to connect to window manager; is the system "
-                    + "running?");
+            System.err.println("** Error: Unable to connect to window manager; is the system " + "running?");
             return false;
         }
 
         mPm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"));
         if (mPm == null) {
-            System.err.println("** Error: Unable to connect to package manager; is the system "
-                    + "running?");
+            System.err.println("** Error: Unable to connect to package manager; is the system " + "running?");
             return false;
         }
 
         try {
-            mAm.setActivityController(new ActivityController());
+            if (mUseApe) {
+                ApeAPIAdapter.setActivityController(mAm, new ApeActivityController());
+                // mAm.setActivityController(new ApeActivityController());
+            } else {
+                ApeAPIAdapter.setActivityController(mAm, new ActivityController());
+                // mAm.setActivityController(new ActivityController());
+            }
             mNetworkMonitor.register(mAm);
         } catch (RemoteException e) {
             System.err.println("** Failed talking with activity manager!");
@@ -1011,8 +1213,10 @@ public class Monkey {
                 if (category.length() > 0) {
                     intent.addCategory(category);
                 }
-                List<ResolveInfo> mainApps = mPm.queryIntentActivities(intent, null, 0,
-                        UserHandle.myUserId());
+                // List<ResolveInfo> mainApps =
+                // mPm.queryIntentActivities(intent, null, 0,
+                // UserHandle.myUserId());
+                List<ResolveInfo> mainApps = ApeAPIAdapter.queryIntentActivities(mPm, intent, UserHandle.myUserId());
                 if (mainApps == null || mainApps.size() == 0) {
                     System.err.println("// Warning: no activities found for category " + category);
                     continue;
@@ -1026,14 +1230,15 @@ public class Monkey {
                     String packageName = r.activityInfo.applicationInfo.packageName;
                     if (MonkeyUtils.getPackageFilter().checkEnteringPackage(packageName)) {
                         if (mVerbose >= 2) { // very verbose
-                            System.out.println("//   + Using main activity " + r.activityInfo.name
-                                    + " (from package " + packageName + ")");
+                            System.out.println("//   + Using main activity " + r.activityInfo.name + " (from package "
+                                    + packageName + ")");
                         }
+                        mUids.add(r.activityInfo.applicationInfo.uid);
                         mMainApps.add(new ComponentName(packageName, r.activityInfo.name));
                     } else {
                         if (mVerbose >= 3) { // very very verbose
-                            System.out.println("//   - NOT USING main activity "
-                                    + r.activityInfo.name + " (from package " + packageName + ")");
+                            System.out.println("//   - NOT USING main activity " + r.activityInfo.name
+                                    + " (from package " + packageName + ")");
                         }
                     }
                 }
@@ -1068,8 +1273,30 @@ public class Monkey {
         boolean shouldAbort = false;
         boolean systemCrashed = false;
 
+        long currentTime = SystemClock.elapsedRealtime();
+        if (mRunningMillis > 0) {
+            mEndTime = currentTime + mRunningMillis;
+
+            // We report everything
+            mIgnoreCrashes = false;
+            mIgnoreTimeouts = false;
+            mKillProcessAfterError = true;
+        }
+
         // TO DO : The count should apply to each of the script file.
-        while (!systemCrashed && cycleCounter < mCount) {
+        while (!systemCrashed) {
+            // Check user specified stopping condition
+            if (mRunningMillis < 0) {
+                if (cycleCounter >= mCount) {
+                    break;
+                }
+            } else {
+                currentTime = SystemClock.elapsedRealtime();
+                if (currentTime > mEndTime) {
+                    break;
+                }
+            }
+
             synchronized (this) {
                 if (mRequestProcRank) {
                     reportProcRank();
@@ -1079,7 +1306,7 @@ public class Monkey {
                     mRequestAnrTraces = false;
                     shouldReportAnrTraces = true;
                 }
-                if (mRequestAnrBugreport){
+                if (mRequestAnrBugreport) {
                     getBugreport("anr_" + mReportProcessName + "_");
                     mRequestAnrBugreport = false;
                 }
@@ -1088,11 +1315,11 @@ public class Monkey {
                     getBugreport("anr_watchdog_");
                     mRequestWatchdogBugreport = false;
                 }
-                if (mRequestAppCrashBugreport){
+                if (mRequestAppCrashBugreport) {
                     getBugreport("app_crash" + mReportProcessName + "_");
                     mRequestAppCrashBugreport = false;
                 }
-                if (mRequestPeriodicBugreport){
+                if (mRequestPeriodicBugreport) {
                     getBugreport("Bugreport_");
                     mRequestPeriodicBugreport = false;
                 }
@@ -1101,6 +1328,7 @@ public class Monkey {
                     shouldReportDumpsysMemInfo = true;
                 }
                 if (mMonitorNativeCrashes) {
+                    mMonitorNativeCrashes = false;
                     // first time through, when eventCounter == 0, just set up
                     // the watcher (ignore the error)
                     if (checkNativeCrashes() && (eventCounter > 0)) {
@@ -1121,22 +1349,29 @@ public class Monkey {
             }
 
             // Report ANR, dumpsys after releasing lock on this.
-            // This ensures the availability of the lock to Activity controller's appNotResponding
+            // This ensures the availability of the lock to Activity
+            // controller's appNotResponding
             if (shouldReportAnrTraces) {
-               shouldReportAnrTraces = false;
-               reportAnrTraces();
+                shouldReportAnrTraces = false;
+                reportAnrTraces();
             }
 
             if (shouldReportDumpsysMemInfo) {
-               shouldReportDumpsysMemInfo = false;
-               reportDumpsysMemInfo();
+                shouldReportDumpsysMemInfo = false;
+                reportDumpsysMemInfo();
             }
 
             if (shouldAbort) {
-               shouldAbort = false;
-               System.out.println("** Monkey aborted due to error.");
-               System.out.println("Events injected: " + eventCounter);
-               return eventCounter;
+                shouldAbort = false;
+                if (mRunningMillis > 0) {
+                    mAbort = false;
+                    Logger.println("Encounter abort but we are in continuous mode.");
+                } else {
+                    shouldAbort = false;
+                    System.out.println("** Monkey aborted due to error.");
+                    System.out.println("Events injected: " + eventCounter);
+                    return eventCounter;
+                }
             }
 
             // In this debugging mode, we never send any events. This is
@@ -1151,8 +1386,7 @@ public class Monkey {
             if ((mVerbose > 0) && (eventCounter % 100) == 0 && eventCounter != 0) {
                 String calendarTime = MonkeyUtils.toCalendarTime(System.currentTimeMillis());
                 long systemUpTime = SystemClock.elapsedRealtime();
-                System.out.println("    //[calendar_time:" + calendarTime + " system_uptime:"
-                                   + systemUpTime + "]");
+                System.out.println("    //[calendar_time:" + calendarTime + " system_uptime:" + systemUpTime + "]");
                 System.out.println("    // Sending event #" + eventCounter);
             }
 
@@ -1160,7 +1394,7 @@ public class Monkey {
             if (ev != null) {
                 int injectCode = ev.injectEvent(mWm, mAm, mVerbose);
                 if (injectCode == MonkeyEvent.INJECT_FAIL) {
-                    System.out.println("    // Injection Failed");
+                    System.out.println("    // Injection Failed " + ev);
                     if (ev instanceof MonkeyKeyEvent) {
                         mDroppedKeyEvents++;
                     } else if (ev instanceof MonkeyMotionEvent) {
@@ -1191,14 +1425,15 @@ public class Monkey {
                 if (!mCountEvents) {
                     cycleCounter++;
                     writeScriptLog(cycleCounter);
-                    //Capture the bugreport after n iteration
+                    // Capture the bugreport after n iteration
                     if (mGetPeriodicBugreport) {
                         if ((cycleCounter % mBugreportFrequency) == 0) {
                             mRequestPeriodicBugreport = true;
                         }
                     }
                 } else {
-                    // Event Source has signaled that we have no more events to process
+                    // Event Source has signaled that we have no more events to
+                    // process
                     break;
                 }
             }
@@ -1318,7 +1553,8 @@ public class Monkey {
      * Returns a long converted from the next data argument, with error handling
      * if not available.
      *
-     * @param opt The name of the option.
+     * @param opt
+     *            The name of the option.
      * @return Returns a long converted from the argument.
      */
     private long nextOptionLong(final String opt) {
@@ -1354,8 +1590,9 @@ public class Monkey {
         usage.append("usage: monkey [-p ALLOWED_PACKAGE [-p ALLOWED_PACKAGE] ...]\n");
         usage.append("              [-c MAIN_CATEGORY [-c MAIN_CATEGORY] ...]\n");
         usage.append("              [--ignore-crashes] [--ignore-timeouts]\n");
-        usage.append("              [--ignore-security-exceptions] [--uiautomator]\n");
-        usage.append("              [--uiautomator-dfs]\n");
+        usage.append("              [--ignore-security-exceptions]\n");
+        usage.append("              [--ape [AGENT_TYPE(random,sata)]]\n");
+        usage.append("              [--running-minutes MINUTES\n");
         usage.append("              [--monitor-native-crashes] [--ignore-native-crashes]\n");
         usage.append("              [--kill-process-after-error] [--hprof]\n");
         usage.append("              [--pct-touch PERCENT] [--pct-motion PERCENT]\n");

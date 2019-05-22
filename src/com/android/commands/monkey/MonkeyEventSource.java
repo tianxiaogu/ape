@@ -28,7 +28,8 @@ public interface MonkeyEventSource {
     /**
      * set verbose to allow different level of log
      *
-     * @param verbose output mode? 1= verbose, 2=very verbose
+     * @param verbose
+     *            output mode? 1= verbose, 2=very verbose
      */
     public void setVerbose(int verbose);
 

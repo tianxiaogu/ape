@@ -19,21 +19,23 @@ package com.android.commands.monkey;
 import android.app.IActivityManager;
 import android.os.RemoteException;
 import android.view.IWindowManager;
+
 /**
  * monkey screen rotation event
  */
 public class MonkeyRotationEvent extends MonkeyEvent {
 
-    private final int mRotationDegree;
-    private final boolean mPersist;
+    public final int mRotationDegree;
+    public final boolean mPersist;
 
     /**
      * Construct a rotation Event.
      *
-     * @param degree Possible rotation degrees, see constants in
-     * anroid.view.Suface.
-     * @param persist Should we keep the rotation lock after the orientation
-     * change.
+     * @param degree
+     *            Possible rotation degrees, see constants in
+     *            anroid.view.Suface.
+     * @param persist
+     *            Should we keep the rotation lock after the orientation change.
      */
     public MonkeyRotationEvent(int degree, boolean persist) {
         super(EVENT_TYPE_ROTATION);
@@ -44,8 +46,7 @@ public class MonkeyRotationEvent extends MonkeyEvent {
     @Override
     public int injectEvent(IWindowManager iwm, IActivityManager iam, int verbose) {
         if (verbose > 0) {
-            System.out.println(":Sending rotation degree=" + mRotationDegree +
-                               ", persist=" + mPersist);
+            System.out.println(":Sending rotation degree=" + mRotationDegree + ", persist=" + mPersist);
         }
 
         // inject rotation event

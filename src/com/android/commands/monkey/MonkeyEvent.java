@@ -27,7 +27,7 @@ public abstract class MonkeyEvent {
     public static final int EVENT_TYPE_KEY = 0;
     public static final int EVENT_TYPE_TOUCH = 1;
     public static final int EVENT_TYPE_TRACKBALL = 2;
-    public static final int EVENT_TYPE_ROTATION = 3;  // Screen rotation
+    public static final int EVENT_TYPE_ROTATION = 3; // Screen rotation
     public static final int EVENT_TYPE_ACTIVITY = 4;
     public static final int EVENT_TYPE_FLIP = 5; // Keyboard flip
     public static final int EVENT_TYPE_THROTTLE = 6;
@@ -46,6 +46,18 @@ public abstract class MonkeyEvent {
         eventType = type;
     }
 
+    int eventId = -1;
+    public void setEventId(int id) {
+        if (this.eventId != -1) {
+            throw new IllegalStateException();
+        }
+        this.eventId = id;
+    }
+
+    public int getEventId() {
+        return eventId;
+    }
+
     /**
      * @return event type
      */
@@ -54,20 +66,24 @@ public abstract class MonkeyEvent {
     }
 
     /**
-     * @return true if it is safe to throttle after this event, and false otherwise.
+     * @return true if it is safe to throttle after this event, and false
+     *         otherwise.
      */
     public boolean isThrottlable() {
         return true;
     }
 
-
     /**
      * a method for injecting event
-     * @param iwm wires to current window manager
-     * @param iam wires to current activity manager
-     * @param verbose a log switch
-     * @return INJECT_SUCCESS if it goes through, and INJECT_FAIL if it fails
-     *         in the case of exceptions, return its corresponding error code
+     * 
+     * @param iwm
+     *            wires to current window manager
+     * @param iam
+     *            wires to current activity manager
+     * @param verbose
+     *            a log switch
+     * @return INJECT_SUCCESS if it goes through, and INJECT_FAIL if it fails in
+     *         the case of exceptions, return its corresponding error code
      */
     public abstract int injectEvent(IWindowManager iwm, IActivityManager iam, int verbose);
 }

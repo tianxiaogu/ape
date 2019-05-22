@@ -31,9 +31,10 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 /**
- * Events for running a special shell command to capture the frame rate for a given app. To run
- * this test, the system property viewancestor.profile_rendering must be set to
- * true to force the currently focused window to render at 60 Hz.
+ * Events for running a special shell command to capture the frame rate for a
+ * given app. To run this test, the system property
+ * viewancestor.profile_rendering must be set to true to force the currently
+ * focused window to render at 60 Hz.
  */
 public class MonkeyGetAppFrameRateEvent extends MonkeyEvent {
 
@@ -48,10 +49,9 @@ public class MonkeyGetAppFrameRateEvent extends MonkeyEvent {
     private static int sEndFrameNo;
 
     private static final String TAG = "MonkeyGetAppFrameRateEvent";
-    private static final String LOG_FILE = new File(Environment.getExternalStorageDirectory(),
-            "avgAppFrameRateOut.txt").getAbsolutePath();
-    private static final Pattern NO_OF_FRAMES_PATTERN =
-            Pattern.compile(".* ([0-9]*) frames rendered");
+    private static final String LOG_FILE = new File(Environment.getExternalStorageDirectory(), "avgAppFrameRateOut.txt")
+            .getAbsolutePath();
+    private static final Pattern NO_OF_FRAMES_PATTERN = Pattern.compile(".* ([0-9]*) frames rendered");
 
     public MonkeyGetAppFrameRateEvent(String status, String activityName, String testCaseName) {
         super(EVENT_TYPE_ACTIVITY);
@@ -88,7 +88,7 @@ public class MonkeyGetAppFrameRateEvent extends MonkeyEvent {
         float avgFrameRate;
         int totalNumberOfFrame = 0;
         try {
-            Log.w(TAG, "file: " +LOG_FILE);
+            Log.w(TAG, "file: " + LOG_FILE);
             writer = new FileWriter(LOG_FILE, true); // true = append
             totalNumberOfFrame = sEndFrameNo - sStartFrameNo;
             avgFrameRate = getAverageFrameRate(totalNumberOfFrame, sDuration);
@@ -109,7 +109,7 @@ public class MonkeyGetAppFrameRateEvent extends MonkeyEvent {
     private String getNumberOfFrames(BufferedReader reader) throws IOException {
         String noOfFrames = null;
         String line = null;
-        while((line = reader.readLine()) != null) {
+        while ((line = reader.readLine()) != null) {
             Matcher m = NO_OF_FRAMES_PATTERN.matcher(line);
             if (m.matches()) {
                 noOfFrames = m.group(1);
@@ -128,8 +128,7 @@ public class MonkeyGetAppFrameRateEvent extends MonkeyEvent {
             p = Runtime.getRuntime().exec(cmd);
             int status = p.waitFor();
             if (status != 0) {
-                System.err.println(String.format("// Shell command %s status was %s",
-                        cmd, status));
+                System.err.println(String.format("// Shell command %s status was %s", cmd, status));
             }
             result = new BufferedReader(new InputStreamReader(p.getInputStream()));
 

@@ -43,8 +43,8 @@ public class MonkeyPermissionEvent extends MonkeyEvent {
             int perm = pm.checkPermission(mPermissionInfo.name, mPkg, UserHandle.myUserId());
             boolean grant = perm == PackageManager.PERMISSION_DENIED;
             // log before calling pm in case we hit an error
-            System.out.println(String.format(":Permission %s %s to package %s",
-                    grant ? "grant" : "revoke", mPermissionInfo.name, mPkg));
+            System.out.println(String.format(":Permission %s %s to package %s", grant ? "grant" : "revoke",
+                    mPermissionInfo.name, mPkg));
             if (grant) {
                 pm.grantRuntimePermission(mPkg, mPermissionInfo.name, UserHandle.myUserId());
             } else {

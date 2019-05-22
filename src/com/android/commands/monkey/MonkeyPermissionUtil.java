@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.android.commands.monkey.ape.utils.Logger;
+
 /**
  * Utility class that encapsulates runtime permission related methods for monkey
  *
@@ -43,13 +45,10 @@ public class MonkeyPermissionUtil {
     private static final String PERMISSION_GROUP_PREFIX = "android.permission-group.";
 
     // from com.android.packageinstaller.permission.utils
-    private static final String[] MODERN_PERMISSION_GROUPS = {
-            Manifest.permission_group.CALENDAR, Manifest.permission_group.CAMERA,
-            Manifest.permission_group.CONTACTS, Manifest.permission_group.LOCATION,
-            Manifest.permission_group.SENSORS, Manifest.permission_group.SMS,
-            Manifest.permission_group.PHONE, Manifest.permission_group.MICROPHONE,
-            Manifest.permission_group.STORAGE
-    };
+    private static final String[] MODERN_PERMISSION_GROUPS = { Manifest.permission_group.CALENDAR,
+            Manifest.permission_group.CAMERA, Manifest.permission_group.CONTACTS, Manifest.permission_group.LOCATION,
+            Manifest.permission_group.SENSORS, Manifest.permission_group.SMS, Manifest.permission_group.PHONE,
+            Manifest.permission_group.MICROPHONE, Manifest.permission_group.STORAGE };
 
     // from com.android.packageinstaller.permission.utils
     private static boolean isModernPermissionGroup(String name) {
@@ -62,8 +61,8 @@ public class MonkeyPermissionUtil {
     }
 
     /**
-     * actual list of packages to target, with invalid packages excluded, and may optionally include
-     * system packages
+     * actual list of packages to target, with invalid packages excluded, and
+     * may optionally include system packages
      */
     private List<String> mTargetedPackages;
     /** if we should target system packages regardless if they are listed */
@@ -83,6 +82,7 @@ public class MonkeyPermissionUtil {
 
     /**
      * Decide if a package should be targeted by permission monkey
+     * 
      * @param info
      * @return
      */
@@ -103,20 +103,18 @@ public class MonkeyPermissionUtil {
 
     private boolean shouldTargetPermission(String pkg, PermissionInfo pi) throws RemoteException {
         int flags = mPm.getPermissionFlags(pi.name, pkg, UserHandle.myUserId());
-        int fixedPermFlags = PackageManager.FLAG_PERMISSION_SYSTEM_FIXED
-                | PackageManager.FLAG_PERMISSION_POLICY_FIXED;
+        int fixedPermFlags = PackageManager.FLAG_PERMISSION_SYSTEM_FIXED | PackageManager.FLAG_PERMISSION_POLICY_FIXED;
         return pi.group != null && pi.protectionLevel == PermissionInfo.PROTECTION_DANGEROUS
-                && ((flags & fixedPermFlags) == 0)
-                && isModernPermissionGroup(pi.group);
+                && ((flags & fixedPermFlags) == 0) && isModernPermissionGroup(pi.group);
     }
 
     public boolean populatePermissionsMapping() {
         mPermissionMap = new HashMap<>();
         try {
-            List<?> pkgInfos = mPm.getInstalledPackages(
-                    PackageManager.GET_PERMISSIONS, UserHandle.myUserId()).getList();
+            List<?> pkgInfos = mPm.getInstalledPackages(PackageManager.GET_PERMISSIONS, UserHandle.myUserId())
+                    .getList();
             for (Object o : pkgInfos) {
-                PackageInfo info = (PackageInfo)o;
+                PackageInfo info = (PackageInfo) o;
                 if (!shouldTargetPackage(info)) {
                     continue;
                 }
@@ -129,8 +127,10 @@ public class MonkeyPermissionUtil {
                     continue;
                 }
                 for (String perm : info.requestedPermissions) {
-                    PermissionInfo pi = mPm.getPermissionInfo(perm, 0);
+                    // PermissionInfo pi = mPm.getPermissionInfo(perm, 0);
+                    PermissionInfo pi = ApeAPIAdapter.getPermissionInfo(mPm, perm, 0);
                     if (pi != null && shouldTargetPermission(info.packageName, pi)) {
+                        Logger.iprintln(pi.toString());
                         permissions.add(pi);
                     }
                 }

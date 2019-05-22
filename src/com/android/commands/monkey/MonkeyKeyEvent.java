@@ -23,6 +23,7 @@ import android.view.IWindowManager;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+
 /**
  * monkey key event
  */
@@ -42,8 +43,7 @@ public class MonkeyKeyEvent extends MonkeyEvent {
         this(-1, -1, action, keyCode, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0);
     }
 
-    public MonkeyKeyEvent(long downTime, long eventTime, int action,
-            int keyCode, int repeatCount, int metaState,
+    public MonkeyKeyEvent(long downTime, long eventTime, int action, int keyCode, int repeatCount, int metaState,
             int device, int scanCode) {
         super(EVENT_TYPE_KEY);
         mDownTime = downTime;
@@ -107,12 +107,10 @@ public class MonkeyKeyEvent extends MonkeyEvent {
             }
 
             try {
-                System.out.println(":Sending Key (" + note + "): "
-                        + mKeyCode + "    // "
+                System.out.println(":Sending Key (" + note + "): " + mKeyCode + "    // "
                         + MonkeySourceRandom.getKeyName(mKeyCode));
             } catch (ArrayIndexOutOfBoundsException e) {
-                System.out.println(":Sending Key (" + note + "): "
-                        + mKeyCode + "    // Unknown key event");
+                System.out.println(":Sending Key (" + note + "): " + mKeyCode + "    // Unknown key event");
             }
         }
 
@@ -126,9 +124,8 @@ public class MonkeyKeyEvent extends MonkeyEvent {
             if (downTime <= 0) {
                 downTime = eventTime;
             }
-            keyEvent = new KeyEvent(downTime, eventTime, mAction, mKeyCode,
-                    mRepeatCount, mMetaState, mDeviceId, mScanCode,
-                    KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD);
+            keyEvent = new KeyEvent(downTime, eventTime, mAction, mKeyCode, mRepeatCount, mMetaState, mDeviceId,
+                    mScanCode, KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD);
         }
         if (!InputManager.getInstance().injectInputEvent(keyEvent,
                 InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT)) {
