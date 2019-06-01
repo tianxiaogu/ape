@@ -5,8 +5,10 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import com.android.commands.monkey.ape.utils.Logger;
+import com.android.internal.view.IInputMethodManager;
 
 import android.app.ActivityManager;
+import android.app.ActivityManager.RunningTaskInfo;
 import android.app.ActivityManagerNative;
 import android.app.IActivityManager;
 import android.app.IApplicationThread;
@@ -17,6 +19,7 @@ import android.content.pm.IPackageManager;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ResolveInfo;
 import android.os.RemoteException;
+import android.view.inputmethod.InputMethodInfo;
 
 /**
  * Use reflection to simplify compilation.
@@ -56,6 +59,47 @@ public class ApeAPIAdapter {
         return null;
     }
 
+    private static Method getTasksMethod = null;
+    @SuppressWarnings("unchecked")
+    public static List<RunningTaskInfo> getTasks(IActivityManager iAm, int maxNum) {
+        Method method = getTasksMethod;
+        if (method == null) {
+            Class<?> clazz = iAm.getClass();
+            String name = "getTasks";
+            method = findMethod(clazz, name, int.class, int.class);
+            if (method == null) {
+                method = findMethod(clazz, name, int.class);
+            }
+            if (method == null) {
+                Logger.println("Cannot resolve method: " + name);
+                System.exit(1);
+            }
+            getTasksMethod = method;
+        }
+        if (method.getParameterCount() == 2) {
+            return (List<RunningTaskInfo>) invoke(method, iAm, maxNum, 0 /* flags */);
+        } else { // 1
+            return (List<RunningTaskInfo>) invoke(method, iAm, maxNum);
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    public static List<InputMethodInfo> getEnabledInputMethodList(IInputMethodManager iIMM) {
+        Class<?> clazz = iIMM.getClass();
+        String name = "getEnabledInputMethodList";
+        Method method = findMethod(clazz, name);
+        if (method != null) {
+            return (List<InputMethodInfo>) invoke(method, iIMM);
+        }
+        method = findMethod(clazz, name, int.class);
+        if (method != null) {
+            return (List<InputMethodInfo>) invoke(method, iIMM, 0);
+        }
+        Logger.println("Cannot resolve method: " + name);
+        System.exit(1);
+        return null;
+    }
+    
     static void registerReceiver(IActivityManager am, IIntentReceiver receiver, IntentFilter filter, int userId) {
         // registerReceiver(IApplicationThread, String, IIntentReceiver,
         // IntentFilter, String, int)

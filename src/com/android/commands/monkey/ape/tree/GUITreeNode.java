@@ -14,6 +14,7 @@ import com.android.commands.monkey.ape.naming.Namelet;
 import com.android.commands.monkey.ape.utils.StringCache;
 
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.Rect;
 
 public class GUITreeNode implements Serializable {
@@ -574,6 +575,7 @@ public class GUITreeNode implements Serializable {
         if (y + height -1 > image.getHeight()) {
             return;
         }
+        image = image.copy(Config.RGB_565, true);
         image.getPixels(pixels, 0, imageWidth, x, y, width - 1, height - 1);
         int hash = 0;
         int begin = 0;

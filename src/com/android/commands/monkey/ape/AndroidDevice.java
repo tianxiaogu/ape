@@ -10,12 +10,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.android.commands.monkey.ApeAPIAdapter;
 import com.android.commands.monkey.ape.utils.Logger;
 import com.android.commands.monkey.ape.utils.Utils;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.view.IInputMethodManager;
 
 import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.ActivityManager.RunningTaskInfo;
 import android.app.IActivityManager;
 import android.app.admin.IDevicePolicyManager;
 import android.content.ComponentName;
@@ -81,8 +83,8 @@ public class AndroidDevice {
         }
 
         boolean useADBKeyboard = false;
-        try {
-            List<InputMethodInfo> inputMethods = iInputMethodManager.getEnabledInputMethodList();
+        List<InputMethodInfo> inputMethods = ApeAPIAdapter.getEnabledInputMethodList(iInputMethodManager);
+        if (inputMethods != null) {
             for (InputMethodInfo imi : inputMethods) {
                 Logger.iprintln("InputMethod ID: " + imi.getId());
                 inputMethodPackages.add(imi.getComponent().getPackageName());
@@ -91,7 +93,6 @@ public class AndroidDevice {
                     useADBKeyboard = true;
                 }
             }
-        } catch (RemoteException e) {
         }
 
         AndroidDevice.useADBKeyboard = useADBKeyboard;
@@ -120,6 +121,16 @@ public class AndroidDevice {
         bounds.right = size.x;
         bounds.bottom = size.y;
         return bounds;
+    }
+    
+    public static ComponentName getTopActivityComponentName() {
+        List<RunningTaskInfo> taskInfo = ApeAPIAdapter.getTasks(iActivityManager, Integer.MAX_VALUE);
+        if (taskInfo == null || taskInfo.isEmpty()) {
+            return null;
+        }
+        RunningTaskInfo task = taskInfo.get(0);
+        ComponentName componentInfo = task.topActivity;
+        return componentInfo;
     }
 
     public static boolean isVirtualKeyboardOpened() {

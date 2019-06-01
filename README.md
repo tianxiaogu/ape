@@ -19,7 +19,7 @@ At that time, we used the old dalvik compiler `dx`.
 Developers may also want to use the new compiler [d8](https://developer.android.com/studio/command-line/d8) in the new SDK.
 
 Ape can be built by simply running `ant` or `ant assemble` in the root folder of the project (where the `build.xml` is.).
-Developers can also clean the build by run `ant clean` first for a clean build.
+Developers can also clean the build by running `ant clean` first for a clean build.
 
 ## Development
 
@@ -38,9 +38,11 @@ See Ape's [website](http://gutianxiao.com/ape/).
 
 ## Support New Android Versions
 
+We tested the compatibility of Ape by using it to test Google Maps for 10 minutes in Android Marshmallow, Nougat, Oreo, Pie and Q emulators.
+
 Ape is developed based on some release of Android Marshmallow (Sorry, I cannot remember the exact tag/commit).
 The easiest way to track the API changes of Ape is to check the change log of Monkey.
-Since Monkey is no longer actively developed, one can easily identify patches related to API changes.
+Since Monkey is no longer actively developed, one can easily identify patches/commits of Monkey that are related to API changes.
 
 * Repository: <https://android.googlesource.com/platform/development/>
 * Monkey folder: <https://android.googlesource.com/platform/development/+/refs/heads/master/cmds/monkey>
@@ -49,6 +51,7 @@ We do not want to build the new Android SDK to get its Java bytecode version aft
 We can use reflection APIs because these internal APIs are mostly invoked at the startup phase and should not be a performance bottleneck of Ape.
 More details can be found in source file `src/com/android/commands/monkey/ApeAPIAdapter.java`
 
+In addition to private APIs used by Monkey, Ape also uses many new private APIs. We will use reflection to replace the direct usage of these APIs when these APIs have incompatible changes.
 
 ## Basic Notes for Development
 
@@ -71,6 +74,9 @@ Here is a list that may help understand the implementation after reading the pap
 * Reducer: See `Namer.java`
 * Model abstraction and refinement: See `NamingFactory.java`
 
+## Known Issue
+
+* `OutOfMemoryError`: Ape is running in the Android device. It has a limited amount of memory. The current implementation of Ape keeps every GUI tree in the memory so it may run out of memory in a couple of hours, depending on the actual configuration of the Android device and the app under testing.
 
 ## Contact
 

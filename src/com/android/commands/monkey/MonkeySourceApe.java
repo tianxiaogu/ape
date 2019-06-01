@@ -276,16 +276,7 @@ public class MonkeySourceApe implements MonkeyEventSource {
     }
 
     public ComponentName getTopActivityComponentName() {
-        try {
-            List<RunningTaskInfo> taskInfo = AndroidDevice.iActivityManager.getTasks(Integer.MAX_VALUE, 0);
-            RunningTaskInfo task = taskInfo.get(0);
-            ComponentName componentInfo = task.topActivity;
-            return componentInfo;
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-
-        return null;
+        return AndroidDevice.getTopActivityComponentName();
     }
 
     /**
@@ -376,22 +367,6 @@ public class MonkeySourceApe implements MonkeyEventSource {
 
         addEvent(new MonkeyTouchEvent(MotionEvent.ACTION_UP).setDownTime(downAt).addPointer(0, p1.x, p1.y)
                 .setIntermediateNote(false));
-    }
-
-    public boolean checkLastActivity() {
-        try {
-            List<RunningTaskInfo> tasks = AndroidDevice.iActivityManager.getTasks(1, 0);
-            if (!tasks.isEmpty()) {
-                RunningTaskInfo task = tasks.get(0);
-                if (task.numActivities == 1) {
-                    Logger.wformat("There is only one activity in the stack (%s)", task.baseActivity);
-                    return true;
-                }
-            }
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-        return false;
     }
 
     protected void generateKeyBackEvent() {
