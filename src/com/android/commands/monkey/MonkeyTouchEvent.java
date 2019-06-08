@@ -16,12 +16,24 @@
 
 package com.android.commands.monkey;
 
+import android.hardware.display.DisplayManagerGlobal;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.InputDevice;
 
 /**
  * monkey touch event
  */
 public class MonkeyTouchEvent extends MonkeyMotionEvent {
+
+    static final int statusBarHeight;
+    static {
+        Display display = DisplayManagerGlobal.getInstance().getRealDisplay(Display.DEFAULT_DISPLAY);
+        DisplayMetrics dm = new DisplayMetrics();
+        display.getMetrics(dm);
+        statusBarHeight = (int) (24 * dm.density);
+    }
+
     public MonkeyTouchEvent(int action) {
         super(MonkeyEvent.EVENT_TYPE_TOUCH, InputDevice.SOURCE_TOUCHSCREEN, action);
     }
@@ -29,5 +41,12 @@ public class MonkeyTouchEvent extends MonkeyMotionEvent {
     @Override
     protected String getTypeLabel() {
         return "Touch";
+    }
+
+    public MonkeyMotionEvent addPointer(int id, float x, float y, float pressure, float size) {
+        if (y < statusBarHeight) { // avoid touch status bar
+            y = statusBarHeight + 1;
+        }
+        return super.addPointer(id, x, y, pressure, size);
     }
 }

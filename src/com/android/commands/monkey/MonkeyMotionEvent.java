@@ -31,14 +31,6 @@ import android.view.MotionEvent;
  */
 public abstract class MonkeyMotionEvent extends MonkeyEvent {
 
-    static final int statusBarHeight;
-    static {
-        Display display = DisplayManagerGlobal.getInstance().getRealDisplay(Display.DEFAULT_DISPLAY);
-        DisplayMetrics dm = new DisplayMetrics();
-        display.getMetrics(dm);
-        statusBarHeight = (int) (24 * dm.density);
-    }
-
     private long mDownTime;
     private long mEventTime;
     private int mAction;
@@ -72,9 +64,6 @@ public abstract class MonkeyMotionEvent extends MonkeyEvent {
     public MonkeyMotionEvent addPointer(int id, float x, float y, float pressure, float size) {
         MotionEvent.PointerCoords c = new MotionEvent.PointerCoords();
         c.x = x;
-        if (y < statusBarHeight) {
-            y = statusBarHeight + 1;
-        }
         c.y = y;
         c.pressure = pressure;
         c.size = size;

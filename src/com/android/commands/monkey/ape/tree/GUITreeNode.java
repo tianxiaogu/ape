@@ -576,6 +576,9 @@ public class GUITreeNode implements Serializable {
             return;
         }
         image = image.copy(Config.RGB_565, true);
+        if (image == null) {
+            return;
+        }
         image.getPixels(pixels, 0, imageWidth, x, y, width - 1, height - 1);
         int hash = 0;
         int begin = 0;
@@ -585,6 +588,7 @@ public class GUITreeNode implements Serializable {
             }
             begin = begin + imageWidth;
         }
+        image.recycle();
         setText(String.format("#%x", hash));
     }
 }

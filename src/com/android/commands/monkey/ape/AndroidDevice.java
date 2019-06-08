@@ -211,6 +211,9 @@ public class AndroidDevice {
             if (packageInfo == null) {
                 return new String[0];
             }
+            if (packageInfo.requestedPermissions == null) {
+                return new String[0];
+            }
             for (String s : packageInfo.requestedPermissions) {
                 Logger.dformat("%s requrested permission %s", packageName, s);
             }
