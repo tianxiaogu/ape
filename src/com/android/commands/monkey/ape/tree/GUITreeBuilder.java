@@ -443,7 +443,6 @@ public class GUITreeBuilder {
         if (!alwaysIgnoreWebView && node.isWebView()) {
             checkAndRemoveWebView(node);
         }
-        info.recycle();
         return node;
     }
 
@@ -566,6 +565,7 @@ public class GUITreeBuilder {
     }
 
     private void fillNode(GUITreeNode node, AccessibilityNodeInfo info) {
+        node.setNodeInfo(info);
         node.setPackageName(StringCache.cacheStringEmptyOnNull(info.getPackageName()));
         node.setClassName(StringCache.cacheStringEmptyOnNull(info.getClassName()));
         node.setText(StringCache.cacheStringEmptyOnNull(StringCache.truncateText(StringCache.removeQuotes(info.getText())), true));

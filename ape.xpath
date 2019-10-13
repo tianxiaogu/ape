@@ -2,7 +2,7 @@
     "xpath": "//*[@class='android.widget.EditText']",
     "actions": ["MODEL_CLICK"],
     "text": "San Francisco",
-    "throttle": 3000
+    "throttle": 500
 },
 {
     "xpath": "//*[@class='android.widget.ImageButton']",

@@ -332,10 +332,23 @@ public class MonkeySourceApe implements MonkeyEventSource {
     private boolean waitForActivityFromClean;
 
     protected void generateClickEventAt(Rect nodeRect, long waitTime) {
-        generateClickEventAt(nodeRect, waitTime, useRandomClick);
+        generateClickEventAt(nodeRect, waitTime, useRandomClick ? ClickPoint.RANDOM : ClickPoint.CENTER);
     }
 
-    protected void generateClickEventAt(Rect nodeRect, long waitTime, boolean useRandomClick) {
+    enum ClickPoint {
+        CENTER,
+        LEFT,
+        TOP,
+        RIGHT,
+        BOTTOM,
+        TOP_LEFT,
+        TOP_RIGHT,
+        BOTTOM_LEFT,
+        BOTTOM_RIGHT,
+        RANDOM
+    }
+
+    protected void generateClickEventAt(Rect nodeRect, long waitTime, ClickPoint clickPoint) {
         Rect bounds = getVisibleBounds(nodeRect);
         if (bounds == null) {
             Logger.wprintln("Error to fetch bounds.");
@@ -343,13 +356,43 @@ public class MonkeySourceApe implements MonkeyEventSource {
         }
 
         PointF p1;
-        if (useRandomClick) {
+        switch (clickPoint) {
+        case CENTER:
+            p1 = new PointF(bounds.exactCenterX(), bounds.exactCenterY());
+            break;
+        case LEFT:
+            p1 = new PointF(bounds.left, bounds.exactCenterY());
+            break;
+        case TOP:
+            p1 = new PointF(bounds.exactCenterX(), bounds.top);
+            break;
+        case RIGHT:
+            p1 = new PointF(Math.min(bounds.left, bounds.right - 1), bounds.exactCenterY());
+            break;
+        case BOTTOM:
+            p1 = new PointF(bounds.exactCenterX(), Math.min(bounds.top, bounds.bottom - 1));
+            break;
+        case TOP_LEFT:
+            p1 = new PointF(bounds.left, bounds.top);
+            break;
+        case TOP_RIGHT:
+            p1 = new PointF(Math.min(bounds.left, bounds.right - 1), bounds.top);
+            break;
+        case BOTTOM_RIGHT:
+            p1 = new PointF(Math.min(bounds.left, bounds.right - 1), Math.min(bounds.top, bounds.bottom - 1));
+            break;
+        case BOTTOM_LEFT:
+            p1 = new PointF(bounds.left, Math.min(bounds.top, bounds.bottom - 1));
+            break;
+        case RANDOM:
             int width = bounds.width() > 0 ? getRandom().nextInt(bounds.width()) : 0;
             int height = bounds.height() > 0 ? getRandom().nextInt(bounds.height()) : 0;
             p1 = new PointF(bounds.left + width, bounds.top + height);
-        } else {
-            p1 = new PointF(bounds.exactCenterX(), bounds.exactCenterY());
+            break;
+        default:
+            throw new RuntimeException("Unsupported type of clickPoint: " + clickPoint);
         }
+
         if (!bounds.contains((int) p1.x, (int) p1.y)) {
             // throw new RuntimeException("Bug");
             Logger.wformat("Invalid bounds: %s", bounds);
@@ -378,20 +421,35 @@ public class MonkeySourceApe implements MonkeyEventSource {
         generateThrottleEvent(mThrottle);
     }
 
+    protected void generateKeyEvent(int key) {
+        generateKeyEvent(key, KeyEvent.KEYCODE_UNKNOWN);
+    }
+
     /**
      * Generate a key event at specific key.
      */
-    protected void generateKeyEvent(int key) {
+    protected void generateKeyEvent(int key, int additionalKey) {
         if (mVerbose > 0) {
             if (!hasKey(key)) {
                 Logger.println("Device has no key " + getKeyName(key));
             }
         }
-        MonkeyKeyEvent e = new MonkeyKeyEvent(KeyEvent.ACTION_DOWN, key);
+        MonkeyKeyEvent e;
+        if (additionalKey != KeyEvent.KEYCODE_UNKNOWN) {
+            e = new MonkeyKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT);
+            addEvent(e);
+        }
+
+        e = new MonkeyKeyEvent(KeyEvent.ACTION_DOWN, key);
         addEvent(e);
 
         e = new MonkeyKeyEvent(KeyEvent.ACTION_UP, key);
         addEvent(e);
+
+        if (additionalKey != KeyEvent.KEYCODE_UNKNOWN) {
+            e = new MonkeyKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT);
+            addEvent(e);
+        }
     }
 
     /**
@@ -721,17 +779,12 @@ public class MonkeySourceApe implements MonkeyEventSource {
             }
             if (info != null) {
                 nullInfoCounter = 0;
-                // if (!checkVirtualKeyboard()) { // first do text input
                 action = mAgent.updateState(topComp, info);
                 if (action == null) {
                     throw new NullPointerException("Resolved action should not be null");
                 }
                 break;
-                // }
             }
-            // if (hasEvent()) { // input events
-            //     break;
-            // }
         }
         if (info == null) {
             Logger.wprintln("Null info root node returned by UiTestAutomationBridge, generate activate action...");
@@ -754,6 +807,7 @@ public class MonkeySourceApe implements MonkeyEventSource {
                 generateEventsForAction(fuzzingAction);
             }
         }
+        mAgent.notifyActionConsumed();
     }
 
     protected void startRandomMainApp() {
@@ -787,6 +841,7 @@ public class MonkeySourceApe implements MonkeyEventSource {
             GUITreeNode node = action.getResolvedNode();
             generateClickEventAt(action.getResolvedNode().getBoundsInScreen(), CLICK_WAIT_TIME);
             if (node != null && node.getInputText() != null) {
+                generateThrottleEvent(200); // Let the click event to be scheduled
                 doInput(action, node);
             }
             break;
@@ -1005,7 +1060,7 @@ public class MonkeySourceApe implements MonkeyEventSource {
 
     void generateRandomClick(boolean longClick) {
         Rect rect = getVisibleBounds();
-        generateClickEventAt(rect, (longClick ? LONG_CLICK_WAIT_TIME : CLICK_WAIT_TIME), true);
+        generateClickEventAt(rect, (longClick ? LONG_CLICK_WAIT_TIME : CLICK_WAIT_TIME), ClickPoint.RANDOM);
     }
 
     private void generateAppSwitchEvent() {
@@ -1143,10 +1198,28 @@ public class MonkeySourceApe implements MonkeyEventSource {
 
     protected void generateClearEvent(GUITreeNode node) {
         Rect bounds = node.getBoundsInScreen();
-        generateThrottleEvent(1000);
-        generateClickEventAt(bounds, LONG_CLICK_WAIT_TIME);
+        int lines = 1;
+        if (node.getNodeInfo() != null) {
+            AccessibilityNodeInfo info = node.getNodeInfo();
+            if (info.getText() != null) {
+                String fullText = info.getText().toString();
+                if (fullText.isEmpty()) {
+                    return;
+                }
+                lines = fullText.split(System.lineSeparator()).length;
+            }
+        }
+        // 1) Move cursor to the top left
+        generateClickEventAt(bounds, CLICK_WAIT_TIME, ClickPoint.TOP_LEFT);
+        generateThrottleEvent(50);
+        // 2) Select all lines
+        while (lines-- > 0) {
+            generateKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT);
+        }
+        generateThrottleEvent(50);
+        // 3) Delete selected text
         generateKeyEvent(KeyEvent.KEYCODE_DEL);
-        generateThrottleEvent(1000);
+        generateThrottleEvent(100);
     }
 
     int lastInputTimestamp;
@@ -1160,7 +1233,6 @@ public class MonkeySourceApe implements MonkeyEventSource {
         String inputText = node.getInputText();
         if (inputText != null) {
             Logger.iprintln("Input text is " + inputText);
-            // clearText(node);
             generateClearEvent(node);
             if (!AndroidDevice.sendText(inputText)) {
                 attempToSendTextByKeyEvents(inputText);
@@ -1183,11 +1255,12 @@ public class MonkeySourceApe implements MonkeyEventSource {
 
         KeyEvent[] events = CharMap.getEvents(szRes);
 
-        for (int i = 0; i < events.length; i += 2) {
-            generateKeyEvent(events[i].getKeyCode());
-            generateThrottleEvent(20);
+        for (int i = 0; i < events.length; i++) {
+            MonkeyKeyEvent e = new MonkeyKeyEvent(events[i]);
+            addEvent(e);
         }
         generateKeyEvent(KeyEvent.KEYCODE_ENTER);
+        generateThrottleEvent(200);
     }
 
     /**

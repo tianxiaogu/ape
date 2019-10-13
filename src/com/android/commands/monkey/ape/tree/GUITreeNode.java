@@ -16,6 +16,7 @@ import com.android.commands.monkey.ape.utils.StringCache;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Rect;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 public class GUITreeNode implements Serializable {
 
@@ -53,6 +54,7 @@ public class GUITreeNode implements Serializable {
     private Name xpathName;
     private transient Namelet currentNamelet;
     private transient Element domNode;
+    private transient AccessibilityNodeInfo nodeInfo;
 
     private int index;
     private final GUITreeNode parent;
@@ -590,5 +592,16 @@ public class GUITreeNode implements Serializable {
         }
         image.recycle();
         setText(String.format("#%x", hash));
+    }
+
+    public void setNodeInfo(AccessibilityNodeInfo info) {
+        if (this.nodeInfo != null) {
+            this.nodeInfo.recycle();
+        }
+        this.nodeInfo = info;
+    }
+
+    public AccessibilityNodeInfo getNodeInfo() {
+        return this.nodeInfo;
     }
 }

@@ -33,6 +33,10 @@ public class Logger {
         System.out.format("[APE] *** WARNING *** %s\n", message);
     }
 
+    public static void dprintln(Object message) {
+        if (debug) System.out.format("[APE] *** DEBUG *** %s\n", message);
+    }
+
     public static void iprintln(Object message) {
         System.out.format("[APE] *** INFO *** %s\n", message);
     }

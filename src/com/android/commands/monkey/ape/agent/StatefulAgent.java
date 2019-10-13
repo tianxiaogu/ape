@@ -600,13 +600,14 @@ public abstract class StatefulAgent extends ApeAgent implements GraphListener {
         } else {
             this.resetTrace();
         }
-        // TODO: just manually release all documents at the end of each
-        // iteration.
-        GUITree.releaseDocuments();
         if (debug) {
             return Action.NOP;
         }
         return action; // newAction are moved to currentAction in moveForward
+    }
+
+    public void notifyActionConsumed() {
+        GUITree.releaseLoadedData();
     }
 
     protected void checkNonDeterministicTransitions() {

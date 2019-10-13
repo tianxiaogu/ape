@@ -31,14 +31,14 @@ public class GUITree implements Serializable {
 
     private static List<GUITree> loadedGUITrees = new ArrayList<GUITree>();
 
-    public static void releaseDocuments() {
+    public static void releaseLoadedData() {
         for (GUITree tree : loadedGUITrees) {
-            tree.releaseDocument();
+            tree.releaseData();
         }
         loadedGUITrees.clear();
     }
 
-    private static void registerLoadedDocument(GUITree tree) {
+    private static void registerLoadedData(GUITree tree) {
         loadedGUITrees.add(tree);
     }
 
@@ -185,7 +185,7 @@ public class GUITree implements Serializable {
     public void setDocument(Document document) {
         this.document = document;
         if (document != null) {
-            registerLoadedDocument(this);
+            registerLoadedData(this);
             document.setUserData(GUITreeBuilder.GUI_TREE_PROP_NAME, this, null);
         }
     }
@@ -305,19 +305,20 @@ public class GUITree implements Serializable {
     /**
      * Release the XML document to save memory since we can recreate it when necessary.
      */
-    public void releaseDocument() {
-        Logger.iprintln("Release document for tree #" + getTimestamp());
-        releaseDocumentNode(this.rootNode);
+    public void releaseData() {
+        Logger.dprintln("Release document for tree #" + getTimestamp());
+        releaseNodeData(this.rootNode);
         this.document = null;
     }
 
-    private static void releaseDocumentNode(GUITreeNode node) {
+    private static void releaseNodeData(GUITreeNode node) {
         Element e = node.getDomNode();
         e.setUserData(GUITreeBuilder.GUI_TREE_NODE_PROP_NAME, null, null);
         node.setDomNode(null);
+        node.setNodeInfo(null);
         Iterator<GUITreeNode> iterator = node.getChildren();
         while (iterator.hasNext()) {
-            releaseDocumentNode(iterator.next());
+            releaseNodeData(iterator.next());
         }
     }
 
