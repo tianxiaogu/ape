@@ -1,0 +1,10 @@
+[{
+    "xpath": "//*[@class='android.widget.EditText']",
+    "actions": ["MODEL_CLICK"],
+    "text": "San Francisco",
+    "throttle": 3000
+},
+{
+    "xpath": "//*[@class='android.widget.ImageButton']",
+    "actions": []
+}]

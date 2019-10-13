@@ -692,22 +692,6 @@ public class Monkey {
             return -4;
         }
 
-        // {
-        // Set<String> packageNames = new HashSet<>();
-        // for (ComponentName cn : mMainApps) {
-        // packageNames.add(cn.getPackageName());
-        // }
-        // try {
-        // ComponentName cn = new ComponentName("io.appium.android.apis",
-        // "io.appium.android.apis.app.DeviceAdminSample$DeviceAdminSampleReceiver");
-        // mDm.setLockTaskPackages(cn, packageNames.toArray(new
-        // String[packageNames.size()]));
-        // } catch (RemoteException e) {
-        // e.printStackTrace();
-        // throw new RuntimeException(e);
-        // }
-        // }
-
         mRandom = new Random(mSeed);
 
         if (mScriptFileNames != null && mScriptFileNames.size() == 1) {

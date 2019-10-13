@@ -1143,8 +1143,10 @@ public class MonkeySourceApe implements MonkeyEventSource {
 
     protected void generateClearEvent(GUITreeNode node) {
         Rect bounds = node.getBoundsInScreen();
+        generateThrottleEvent(1000);
         generateClickEventAt(bounds, LONG_CLICK_WAIT_TIME);
         generateKeyEvent(KeyEvent.KEYCODE_DEL);
+        generateThrottleEvent(1000);
     }
 
     int lastInputTimestamp;
@@ -1183,6 +1185,7 @@ public class MonkeySourceApe implements MonkeyEventSource {
 
         for (int i = 0; i < events.length; i += 2) {
             generateKeyEvent(events[i].getKeyCode());
+            generateThrottleEvent(20);
         }
         generateKeyEvent(KeyEvent.KEYCODE_ENTER);
     }
