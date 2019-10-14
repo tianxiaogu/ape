@@ -85,6 +85,7 @@ public class Config {
 
     public static final boolean useAncestorNamer = Config.getBoolean("ape.useAncestorNamer", true);
 
+    public static final int truncateTextLength = Config.getInteger("ape.truncateTextLength", 8);
     public static final int maxStringPieceLength = Config.getInteger("ape.maxStringPieceLength", 32);
 
     public static final int trivialActivityStateThreshold = Config.getInteger("ape.trivialActivityStateThreshold", 5);

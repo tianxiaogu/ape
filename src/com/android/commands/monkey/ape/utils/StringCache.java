@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static com.android.commands.monkey.ape.utils.Config.truncateTextLength;
+
 public class StringCache {
 
 
@@ -64,16 +66,6 @@ public class StringCache {
                 throw new RuntimeException("Fail to load the strings file at " + stringFiles);
             }
         }
-    }
-
-    public static final int truncateLength = Config.getInteger("ape.truncateLength", 128);
-    public static final int truncateTextLength = Config.getInteger("ape.truncateTextLength", 8);
-
-    public static String truncate(String origin) {
-        if (truncateLength < origin.length()) {
-            return origin.substring(0, truncateLength);
-        }
-        return origin;
     }
 
     public static String removeQuotes(CharSequence input) {
