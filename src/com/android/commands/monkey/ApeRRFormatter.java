@@ -246,7 +246,7 @@ public class ApeRRFormatter {
                 int step = jAction.getInt("timestamp");
                 String screenURL = String.format("step-%d.png", step);
                 String content = String.format("%s@%d", jAction.getString("actionType"), step);
-                String rect = "";
+                String rect = null;
                 if (jAction.has("bounds")) {
                     rect = "[" + jAction.getString("bounds") + "]";
                 }
