@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,7 +39,6 @@ public class Naming implements Serializable {
      * 
      */
     private static final long serialVersionUID = 7543098620002637872L;
-
 
     public static class NamingResult {
         private int nodeSize;
@@ -180,6 +180,31 @@ public class Naming implements Serializable {
 
     };
 
+    static class Edge {
+        Namelet from;
+        Namelet to;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Edge edge = (Edge) o;
+            // from must be exactly the same
+            // to could be equal
+            return from == edge.from && Objects.equals(to, edge.to);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(from, to);
+        }
+
+        public Edge(Namelet from, Namelet to) {
+            this.from = from;
+            this.to = to;
+        }
+    }
+
     static AtomicInteger counter = new AtomicInteger();
 
     private String namingName; // for logging
@@ -187,7 +212,7 @@ public class Naming implements Serializable {
     private Namelet[] namelets;
     // Use //* namelet Namer defaultNamer;
     private int fineness;
-    private Map<Namelet, Naming> children;
+    private Map<Edge, Naming> children;
 
     public Naming(Namelet[] namelets) { // base
         this(null, namelets);
@@ -207,6 +232,10 @@ public class Naming implements Serializable {
                 this.fineness = f;
             }
         }
+    }
+
+    public boolean hasChild() {
+        return this.children == null || this.children.isEmpty();
     }
 
     public Naming getParent() {
@@ -258,11 +287,11 @@ public class Naming implements Serializable {
     public Naming extend(Namelet parent, Namelet namelet) {
         ensureContain(parent);
         ensureRefine(parent, namelet);
-        Naming child = getChild(namelet);
+        Naming child = getChild(parent, namelet);
         if (child == null) {
             child = doExtend(namelet);
             namelet.setParent(parent);
-            addChild(namelet, child);
+            addChild(parent, namelet, child);
         }
         return child;
     }
@@ -288,7 +317,7 @@ public class Naming implements Serializable {
     }
 
     /**
-     * 
+     *
      * @param replaced
      * @param namelet
      * @return
@@ -299,11 +328,11 @@ public class Naming implements Serializable {
         return parentNaming.extend(replaced.getParent(), namelet);
     }
 
-    private void addChild(Namelet namelet, Naming child) {
+    private void addChild(Namelet parent, Namelet namelet, Naming child) {
         if (children == null) {
             children = new HashMap<>();
         }
-        children.put(namelet, child);
+        children.put(new Edge(parent, namelet), child);
     }
 
     public Collection<Naming> getChildren() {
@@ -313,11 +342,11 @@ public class Naming implements Serializable {
         return this.children.values();
     }
 
-    private Naming getChild(Namelet namelet) {
+    private Naming getChild(Namelet parent, Namelet namelet) {
         if (children == null) {
             return null;
         }
-        return children.get(namelet);
+        return children.get(new Edge(parent, namelet));
     }
 
     private Naming doExtend(Namelet namelet) {

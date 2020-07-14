@@ -1,5 +1,7 @@
 package com.android.commands.monkey.ape.utils;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -66,9 +68,71 @@ public class RandomHelper {
     }
 
     static final String CHARS = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~-=`:\";'{}[]|\\'<>,.?/";
+    static final String DIGITS = "0123456789";
 
     public static String nextString() {
+        int stringType = RandomHelper.nextInt(4);
+        switch (stringType) {
+            case 0:
+                return nextIntegerString(32);
+            case 1:
+                return nextFloatString(24, 8);
+            case 2:
+                return nextDateString();
+        }
         return nextString(32);
+    }
+
+    static String[] dateFormats = new String[] {
+            "yyyy.MM.dd",
+            "HH:mm:ss",
+            "yyy-MM-dd",
+            "yyyy.MM.dd HH:mm:ss",
+    };
+
+    static <E> E next(E[] array) {
+        return array[nextInt(array.length)];
+    }
+
+    private static String nextDateString() {
+        long timestamp = nextLong();
+        Date date = new Date(timestamp);
+        return new SimpleDateFormat(next(dateFormats)).format(date);
+    }
+
+    public static String nextIntegerString(int maxLength) {
+        return nextIntegerString(maxLength, true);
+    }
+
+    public static String nextIntegerString(int maxLength, boolean includeMinus) {
+        int total = nextInt(maxLength); // total may be zero
+        char[] value = new char[total];
+        int charTotal = DIGITS.length();
+        int i = 0;
+        if (i < total && includeMinus && toss(0.5)) {
+            value[i++] = toss(0.5) ? '+' : '-';
+        }
+        for (; i < total; i++) {
+            value[i] = DIGITS.charAt(nextInt(charTotal));
+        }
+        return String.valueOf(value);
+    }
+
+    public static String nextFloatString(int maxLength, int maxLength2) {
+        return nextIntegerString(maxLength) + "." + nextIntegerString(maxLength2, false);
+    }
+
+    public static String nextFormattedString() {
+        int stringType = RandomHelper.nextInt(3);
+        switch (stringType) {
+            case 0:
+                return nextDateString();
+            case 1:
+                return nextFloatString(24, 8);
+            case 2:
+                return nextIntegerString(32);
+        }
+        return nextIntegerString(32);
     }
 
     public static String nextString(int maxLength) {

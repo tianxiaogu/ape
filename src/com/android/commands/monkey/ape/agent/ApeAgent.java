@@ -34,6 +34,7 @@ import com.android.commands.monkey.ape.tree.GUITreeNode;
 import com.android.commands.monkey.ape.utils.Config;
 import com.android.commands.monkey.ape.utils.Logger;
 import com.android.commands.monkey.ape.utils.RandomHelper;
+import com.android.commands.monkey.ape.utils.StringCache;
 import com.android.commands.monkey.ape.utils.Utils;
 
 import android.content.ComponentName;
@@ -163,7 +164,7 @@ public abstract class ApeAgent implements Agent {
             GUITreeNode node = ((ModelAction) action).getResolvedNode();
             if (node.isEditText() && node.getInputText() == null) {
                 if (RandomHelper.toss(inputRate)) {
-                    String text = RandomHelper.nextString();
+                    String text = StringCache.nextString();
                     node.setInputText(text);
                 }
             }

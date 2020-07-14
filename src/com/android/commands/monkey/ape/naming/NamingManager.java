@@ -101,4 +101,7 @@ public interface NamingManager extends Serializable {
 
     void release(GUITree removed);
 
+    void syncAll();
+
+    boolean isLeaf(Naming naming);
 }

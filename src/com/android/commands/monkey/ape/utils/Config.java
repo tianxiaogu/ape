@@ -20,7 +20,7 @@ public class Config {
     /**
      * Readonly
      */
-    public static final boolean takeScreenshot = Config.getBoolean("ape.takeScreenshot", true);
+    public static final boolean takeScreenshot = Config.getBoolean("ape.takeScreenshot", false);
     public static final boolean takeScreenshotForNewState = Config.getBoolean("ape.takeScreenshotForNewState", false);
     public static final boolean takeScreenshotForEveryStep = Config.getBoolean("ape.takeScreenshotForEveryStep", true);
     public static final boolean saveGUITreeToXmlEveryStep = Config.getBoolean("ape.saveGUITreeToXmlEveryStep", true);
@@ -87,6 +87,8 @@ public class Config {
 
     public static final int truncateTextLength = Config.getInteger("ape.truncateTextLength", 8);
     public static final int maxStringPieceLength = Config.getInteger("ape.maxStringPieceLength", 32);
+    public static final int maxStringListSize = Config.getInteger("ape.maxStringListSize", 2000);
+    public static final double randomFormattedStringProp = Config.getDouble("ape.randomFormattedStringProp", 0.5);
 
     public static final int trivialActivityStateThreshold = Config.getInteger("ape.trivialActivityStateThreshold", 5);
     public static final int trivialActivityVisitThreshold = Config.getInteger("ape.trivialActivityVisitThreshold", 16);

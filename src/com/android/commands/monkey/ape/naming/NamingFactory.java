@@ -180,6 +180,38 @@ public class NamingFactory implements Serializable {
         }
     }
 
+    List<GUITree> getAffectedGUITree(Model model, NamingManager nm, RefinementResult rr) {
+        Naming oldOne = rr.originalNaming;
+        Naming newOne = rr.updatedNaming;
+        if (oldOne == newOne.getParent()) {
+            return rr.stateTransition1.getSource().getGUITrees();
+        } else if (oldOne.getParent() != null && oldOne.getParent() == newOne.getParent()) {
+            if (!nm.isLeaf(oldOne) || !nm.isLeaf(newOne)) {
+                nm.dump();
+                throw new IllegalStateException("Can only replace two leaf naming");
+            }
+            Naming parentNaming = oldOne.getParent();
+            // get a gui tree
+            List<GUITree> affectedGUITrees = new ArrayList<>();
+            GUITree tree = rr.stateTransition1.getSource().getLatestGUITree();
+            StateKey parentState = nm.getStateKey(parentNaming, tree);
+            Set<State> parentStates = model.getGraph().getStates(parentNaming);
+            for (State state : parentStates) {
+                if (state.getGUITrees().isEmpty()) {
+                    continue;
+                }
+                GUITree anotherTree = state.getLatestGUITree();
+                StateKey anotherState = nm.getStateKey(parentNaming, anotherTree);
+                if (parentState.equals(anotherState)) {
+                    affectedGUITrees.addAll(state.getGUITrees());
+                }
+            }
+            return affectedGUITrees;
+        } else {
+            throw new IllegalStateException("Invalid refinement result");
+        }
+    }
+
     /**
      * 
      * @param model
@@ -190,8 +222,27 @@ public class NamingFactory implements Serializable {
         if (rr == null) {
             return model;
         }
-        updateNamingManager(model, model.getNamingManager(), rr);
-        return model.rebuild();
+
+        NamingManager nm = model.getNamingManager();
+        Naming newOne = rr.updatedNaming;
+        List<GUITree> affectedGUITrees = getAffectedGUITree(model, nm, rr);
+        for (GUITree tree : affectedGUITrees) {
+            nm.updateNaming(tree, newOne);
+        }
+        logRefinement(rr);
+        Model newModel = model.rebuild();
+        if (debug) {
+            for (GUITree tree : affectedGUITrees) {
+                Naming current = tree.getCurrentNaming();
+                Naming dict = nm.getNaming(tree);
+                Naming graph = nm.getNaming(tree, tree.getActivityName(), tree.getDocument());
+                if (current != dict || current != graph) {
+                    nm.dump();
+                    throw new IllegalStateException();
+                }
+            }
+        }
+        return newModel;
     }
 
     List<RefinementResult> refine(Model model, StateTransition st1, StateTransition st2, List<GUITreeTransition> tts1,
@@ -241,7 +292,7 @@ public class NamingFactory implements Serializable {
                 candidates.add(action.getTarget());
             }
         }
-        {
+        if (nm.isLeaf(currentNaming)) {
             Namelet last = currentNaming.getLastNamelet();
             Namer lastNamer = last.getNamer();
             if (currentNaming.isReplaceable(last)) {
@@ -262,6 +313,9 @@ public class NamingFactory implements Serializable {
                     }
                     Namelet newNamelet = new Namelet(last.getExprString(), refined);
                     Naming newNaming = currentNaming.replaceLast(last, newNamelet);
+                    if (!nm.isLeaf(newNaming)) {
+                        continue;
+                    }
                     if (!checkStateRefinement(newNaming, refined, tts1, tts2, upperBounds)) {
                         continue;
                     }
@@ -419,30 +473,25 @@ public class NamingFactory implements Serializable {
         return candidates.get(0);
     }
 
-    private Model rebuild(Model model, Collection<GUITree> affected, Naming newNaming) {
+    private Model rebuild(Model model, Collection<GUITree> affectedGUITrees, Naming newNaming) {
         NamingManager nm = model.getNamingManager();
-        for (GUITree tree : affected) {
+        for (GUITree tree : affectedGUITrees) {
             nm.updateNaming(tree, newNaming);
         }
-        return model.rebuild();
-    }
-
-    private void updateNamingManager(Model model, NamingManager nm, RefinementResult rr) {
-        Naming newOne = rr.updatedNaming;
-        for (GUITree tree : rr.stateTransition1.getSource().getGUITrees()) {
-            nm.updateNaming(tree, newOne);
-        }
+        // nm.syncAll();
+        Model newModel = model.rebuild();
         if (debug) {
-            Iterator<GUITree> trees = model.getGUITrees();
-            Map<GUITree, Naming> updated = nm.sync(trees);
-            for (Entry<GUITree, Naming> entry : updated.entrySet()) {
-                GUITree tree = entry.getKey();
-                Naming naming = entry.getValue();
-                Logger.iformat("Update GUITree at %d, state is %s, current naming is %s, updated naming is %s.",
-                        tree.getTimestamp(), tree.getCurrentState(), tree.getCurrentNaming(), naming);
+            for (GUITree tree : affectedGUITrees) {
+                Naming current = tree.getCurrentNaming();
+                Naming dict = nm.getNaming(tree);
+                Naming graph = nm.getNaming(tree, tree.getActivityName(), tree.getDocument());
+                if (current != dict || current != graph) {
+                    nm.dump();
+                    throw new IllegalStateException();
+                }
             }
         }
-        logRefinement(rr);
+        return newModel;
     }
 
     private boolean checkStateRefinement(Naming newNaming, Namer newNamer, List<GUITreeTransition> tts1,
@@ -601,7 +650,7 @@ public class NamingFactory implements Serializable {
             return;
         }
         Namer currentNamer = widget.getNamer();
-        {
+        if (nm.isLeaf(currentNaming)) {
             if (currentNaming.isReplaceable(currentNamelet)) {
                 Namelet parent = currentNamelet.getParent();
                 Namer parentNamer = parent.getNamer();
@@ -620,6 +669,9 @@ public class NamingFactory implements Serializable {
                     }
                     Namelet newNamelet = new Namelet(currentNamelet.getExprString(), refined);
                     Naming newNaming = currentNaming.replaceLast(currentNamelet, newNamelet);
+                    if (!nm.isLeaf(newNaming)) {
+                        continue;
+                    }
                     if (checkActionRefinement(newNaming, refined, tts1, tts2, upperBounds) == false) {
                         continue outer;
                     }
@@ -913,9 +965,9 @@ public class NamingFactory implements Serializable {
     /**
      * Check whether targetNaming is too fine-grained in comparison with its parent.
      * @param model
-     * @param initialNaming
-     * @param initialState
-     * @param targetNaming, the naming that needs to be checked
+     * @param initialNaming, the current naming
+     * @param initialState, the current state
+     * @param targetNaming, the naming that needs to be checked, the parent of initialNaming
      * @param targetStates, all current states created by the target naming and its children naming
      * @return
      */
@@ -933,10 +985,10 @@ public class NamingFactory implements Serializable {
         Set<State> affectedStates = filterTargets(initialState, targetNaming, targetStates);
         int threshold = getMaxStatesForRefinementThreshold(targetNaming);
         Set<StateKey> targets = new HashSet<>();
-        Set<GUITree> affected = new HashSet<>();
+        Set<GUITree> affectedGUITrees = new HashSet<>();
         for (State state : affectedStates) {
             for (GUITree tree : state.getGUITrees()) {
-                affected.add(tree);
+                affectedGUITrees.add(tree);
                 targets.add(GUITreeBuilder.getStateKey(targetNaming, tree));
             }
         }
@@ -948,15 +1000,15 @@ public class NamingFactory implements Serializable {
             return model;
         }
         Logger.iformat("Revert a naming from %s to %s, affect %d states and %d trees", targetNaming, targetParentNaming,
-                affectedStates.size(), affected.size());
+                affectedStates.size(), affectedGUITrees.size());
         for (StateKey key : targets) {
             Logger.iformat("- %s", key);
         }
-        Predicate p = createAssertStatesFewerThan(targetParentNaming, model, affected, threshold);
+        Predicate p = createAssertStatesFewerThan(targetParentNaming, model, affectedGUITrees, threshold);
         NamingManager nm = model.getNamingManager();
-        blacklistRefinement(affected, targetParentNaming, targetNaming);
-        model = rebuild(model, affected, targetParentNaming);
-        removeConflictPredicates(nm, affected, targetParentNaming);
+        blacklistRefinement(affectedGUITrees, targetParentNaming, targetNaming);
+        model = rebuild(model, affectedGUITrees, targetParentNaming);
+        removeConflictPredicates(nm, affectedGUITrees, targetParentNaming);
         this.predicates.add(p);
         return model;
     }
@@ -1097,9 +1149,10 @@ public class NamingFactory implements Serializable {
         }
         Logger.iformat("actionRefinement: Refine name %s that has been resolved to %d nodes", name, nodes.length);
         //
+        NamingManager nm = model.getNamingManager();
         Namelet namelet = node.getCurrentNamelet();
         Namer namer = namelet.getNamer();
-        if (naming.isReplaceable(namelet)) {
+        if (nm.isLeaf(naming) && naming.isReplaceable(namelet)) {
             Namelet parent = namelet.getParent();
             Namer parentNamer = parent.getNamer();
             List<Namer> refinedNamers = NamerFactory.getSortedAbove(parentNamer);
@@ -1116,6 +1169,9 @@ public class NamingFactory implements Serializable {
                     continue; // avoid replace with the same namelet.
                 }
                 Naming newNaming = naming.replaceLast(namelet, new Namelet(namelet.getExprString(), refined));
+                if (!nm.isLeaf(newNaming)) {
+                    continue;
+                }
                 Model newModel = checkActionRefinement(model, newNaming, refined, nodes, tree, trees, upperBounds);
                 if (newModel != null) {
                     return newModel;

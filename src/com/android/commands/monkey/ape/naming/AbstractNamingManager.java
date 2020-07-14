@@ -28,7 +28,7 @@ public abstract class AbstractNamingManager implements NamingManager, Cloneable 
     protected Map<GUITree, Naming> treeToNaming = new HashMap<>();
     protected int version;
     
-    private static boolean debug = false;
+    private static boolean debug = true;
 
     public AbstractNamingManager(NamingFactory nf) {
         this.namingFactory = nf;
@@ -52,6 +52,10 @@ public abstract class AbstractNamingManager implements NamingManager, Cloneable 
 
     public final Model stateAbstraction(Model model, Naming naming, State target, Naming parentNaming, Set<State> states) {
         return namingFactory.batchAbstract(model, naming, target, parentNaming, states);
+    }
+
+    public boolean isLeaf(Naming naming) {
+        return naming.hasChild();
     }
 
     protected boolean checkReplace(Naming existing, Naming oldOne, Naming newOne) {
@@ -111,10 +115,21 @@ public abstract class AbstractNamingManager implements NamingManager, Cloneable 
     public final void updateNaming(GUITree tree, Naming newOne) {
         this.version++;
         Naming existing = this.treeToNaming.put(tree, newOne);
+        Naming check = this.getNaming(tree, tree.getActivityName(), tree.getDocument());
+        Logger.iformat("Update naming for %s: existing in dict: %s, current in tree: %s, check in graph: %s, new: %s",
+                tree, existing, tree.getCurrentNaming(), check, newOne);
         if (debug) {
-            if (existing != null && existing != tree.getCurrentNaming()) {
-                Logger.wformat("Existing: %s, current: %s, new: %s", existing, tree.getCurrentNaming(), newOne);
-                throw new IllegalStateException("Inconsistent naming update.");
+            if (existing != null) {
+                if (existing != tree.getCurrentNaming()) {
+                    Logger.wformat("Existing: %s, current: %s, new: %s", existing, tree.getCurrentNaming(), newOne);
+                    throw new IllegalStateException("Inconsistent naming update.");
+                }
+
+                if (existing != check && newOne != check) {
+                    dump();
+                    Logger.wformat("Existing: %s, current (by graph): %s, new: %s", existing, check, newOne);
+                    throw new IllegalStateException("Inconsistent naming update.");
+                }
             }
         }
         updateNaming(tree, tree.getActivityName(), tree.getDocument(), tree.getCurrentNaming(), newOne);
@@ -164,4 +179,21 @@ public abstract class AbstractNamingManager implements NamingManager, Cloneable 
         return updated;
     }
 
+    @Override
+    public void syncAll() {
+        long begin = SystemClock.elapsedRealtimeNanos();
+        Logger.println("Start syncing naming manager...");
+        Map<GUITree, Naming> updated = new HashMap<>();
+        for (Map.Entry<GUITree, Naming> entry : this.treeToNaming.entrySet()) {
+            GUITree tree = entry.getKey();
+            Naming check = getNaming(tree, tree.getActivityName(), tree.getDocument());
+            if (entry.getValue() != check) {
+                updated.put(tree, check);
+            }
+        }
+        treeToNaming.putAll(updated);
+        long end = SystemClock.elapsedRealtimeNanos();
+        Logger.format("Sync naming functions: checked %d trees in %d ms, %d updated.", treeToNaming.size(),
+                TimeUnit.NANOSECONDS.toMillis(end - begin), updated.size());
+    }
 }

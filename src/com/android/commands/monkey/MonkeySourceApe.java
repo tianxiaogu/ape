@@ -84,7 +84,13 @@ public class MonkeySourceApe implements MonkeyEventSource {
 
     private static final boolean useRandomClick = false;
 
-
+    static KeyCharacterMap CharMap;
+    static {
+        if (Build.VERSION.SDK_INT >= 11) // My soft runs until API 5
+            CharMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+        else
+            CharMap = KeyCharacterMap.load(KeyCharacterMap.ALPHA);
+    }
 
     /** Possible screen rotation degrees **/
     private static final int[] SCREEN_ROTATION_DEGREES = { Surface.ROTATION_0, Surface.ROTATION_90,
@@ -1246,12 +1252,13 @@ public class MonkeySourceApe implements MonkeyEventSource {
 
     private void attempToSendTextByKeyEvents(String inputText) {
         char[] szRes = inputText.toCharArray(); // Convert String to Char array
-
-        KeyCharacterMap CharMap;
-        if (Build.VERSION.SDK_INT >= 11) // My soft runs until API 5
-            CharMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
-        else
-            CharMap = KeyCharacterMap.load(KeyCharacterMap.ALPHA);
+        char[] one = new char[1];
+        for (int i = 0; i < szRes.length; i++) {
+            one[0] = szRes[i];
+            if (CharMap.getEvents(one) == null) {
+                szRes[i] = ' ';
+            }
+        }
 
         KeyEvent[] events = CharMap.getEvents(szRes);
 

@@ -173,11 +173,20 @@ public class Model implements Serializable {
             for (State state : graph.getStates()) {
                 for (GUITree tree : state.getGUITrees()) {
                     Naming naming = tree.getCurrentNaming();
-                    Naming check = namingManager.getNaming(tree);
-                    if (naming != check) {
-                        statesToRemove.add(state);
-                        break;
+                    {
+                        Naming check = namingManager.getNaming(tree);
+                        if (naming != check) {
+                            statesToRemove.add(state);
+                            break;
+                        }
                     }
+/*                    {
+                        Naming check = namingManager.getNaming(tree, tree.getActivityName(), tree.getDocument());
+                        if (naming != check) {
+                            statesToRemove.add(state);
+                            break;
+                        }
+                    }*/
                 }
             }
             for (State state : statesToRemove) {

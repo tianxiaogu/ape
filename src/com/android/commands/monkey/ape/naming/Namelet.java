@@ -1,6 +1,11 @@
 package com.android.commands.monkey.ape.naming;
 
 import java.io.Serializable;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.PriorityQueue;
 
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
@@ -10,7 +15,7 @@ import org.w3c.dom.NodeList;
 
 import com.android.commands.monkey.ape.utils.XPathBuilder;
 
-public class Namelet implements Serializable {
+public class Namelet implements Serializable, Comparable<Namelet> {
 
     enum Type {
         BASE, REFINE,
@@ -23,8 +28,10 @@ public class Namelet implements Serializable {
     private final Type type;
     private final String exprStr;
     private final Namer namer;
+
     private int depth;
     private Namelet parent;
+    private Map<Namelet, Naming> children;
 
     public Namelet(Type type, String exprStr, Namer namer) {
         this.type = type;
@@ -48,6 +55,20 @@ public class Namelet implements Serializable {
 
     public String toString() {
         return String.format("[%s][%d][%s][%s][%s]", type, depth, exprStr, namer, parent);
+    }
+
+    public void addChildNaming(Namelet child, Naming childNaming) {
+        if (children == null) {
+            children = new HashMap<>();
+        }
+        children.put(child, childNaming);
+    }
+
+    public Naming getChildNaming(Namelet child) {
+        if (children == null) {
+            return null;
+        }
+        return children.get(child);
     }
 
     @Override
@@ -128,4 +149,43 @@ public class Namelet implements Serializable {
     public Namer getNamer() {
         return namer;
     }
+
+    static Comparator<Namer> namerComparator = new Comparator<Namer>() {
+
+        @Override
+        public int compare(Namer o1, Namer o2) {
+            EnumSet<NamerType> types1 = o1.getNamerTypes();
+            EnumSet<NamerType> types2 = o2.getNamerTypes();
+            int ret = types1.size() - types2.size();
+            if (ret != 0) {
+                return ret;
+            }
+            if (types1.isEmpty()) {
+                return 0; // both are empty
+            }
+            NamerType[] typesArray1 = types1.toArray(new NamerType[0]);
+            NamerType[] typesArray2 = types2.toArray(new NamerType[0]);
+            for (int i = 0; i < typesArray1.length; i++) {
+                ret = typesArray1[i].compareTo(typesArray2[i]);
+                if (ret != 0) {
+                    return ret;
+                }
+            }
+            return 0;
+        }
+    };
+
+    @Override
+    public int compareTo(Namelet o) {
+        int ret = this.exprStr.compareTo(o.exprStr);
+        if (ret != 0) {
+            return ret;
+        }
+        ret = this.type.compareTo(o.type);
+        if (ret != 0) {
+            return ret;
+        }
+        return namerComparator.compare(this.namer, o.namer);
+    }
+
 }

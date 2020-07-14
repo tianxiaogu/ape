@@ -637,7 +637,7 @@ public abstract class StatefulAgent extends ApeAgent implements GraphListener {
         while (true) {
             Logger.iformat("Check under-abstracted states %s: #%d", newState, iteration++);
             State state = newState;
-            checkAndAbstractUndereAbstractedState();
+            checkAndAbstractUnderAbstractedState();
             if (state == newState) {
                 break;
             }
@@ -645,7 +645,7 @@ public abstract class StatefulAgent extends ApeAgent implements GraphListener {
         return newState;
     }
 
-    protected void checkAndAbstractUndereAbstractedState() {
+    protected void checkAndAbstractUnderAbstractedState() {
         Naming naming = newState.getCurrentNaming();
         Naming parentNaming = naming;
         int iteration = 0;

@@ -47,6 +47,7 @@ public class Graph implements Serializable {
         public boolean hasNext() {
             return iterator.hasNext();
         }
+
     }
 
     public static Iterator<State> targets(Collection<StateTransition> edges) {

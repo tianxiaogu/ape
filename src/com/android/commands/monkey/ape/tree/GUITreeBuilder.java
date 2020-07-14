@@ -570,7 +570,7 @@ public class GUITreeBuilder {
         node.setClassName(StringCache.cacheStringEmptyOnNull(info.getClassName()));
         node.setText(StringCache.cacheStringEmptyOnNull(StringCache.truncateText(StringCache.removeQuotes(info.getText())), true));
         node.setResourceID(StringCache.cacheStringEmptyOnNull(info.getViewIdResourceName()));
-        node.setContentDesc(StringCache.cacheStringEmptyOnNull(StringCache.removeQuotes(info.getContentDescription())));
+        node.setContentDesc(StringCache.cacheStringEmptyOnNull(StringCache.removeQuotes(info.getContentDescription()), true));
 
         node.setChecked(info.isChecked());
         node.setEnabled(info.isEnabled());

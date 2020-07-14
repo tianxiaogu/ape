@@ -15,7 +15,6 @@ public class StringCache {
 
 
     public static Map<String, String> stringDict = new HashMap<String, String>();
-    static final List<String> strings; // = new ArrayList<String>();
     static final List<String> stringList = new ArrayList<>();
 
     public static String cacheString(String string) {
@@ -34,7 +33,9 @@ public class StringCache {
             stringDict.put(string, string);
             existing = string;
             if (addToList) {
-                stringList.add(string);
+                if (stringList.size() < maxStringListSize) {
+                    stringList.add(string);
+                }
             }
         }
         return existing;
@@ -52,20 +53,22 @@ public class StringCache {
         return cacheString(val, addToList);
     }
 
+    static final int maxStringListSize;
+
     static {
         File stringFiles = new File("/sdcard/ape.strings");
-        strings = new ArrayList<String>();
         if (stringFiles.exists()) {
             try (BufferedReader br = new BufferedReader(new FileReader(stringFiles))) {
                 String line = null;
                 while ((line = br.readLine()) != null) {
-                    strings.add(line);
+                    stringList.add(line);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 throw new RuntimeException("Fail to load the strings file at " + stringFiles);
             }
         }
+        maxStringListSize = stringList.size() + Config.maxStringListSize;
     }
 
     public static String removeQuotes(CharSequence input) {
@@ -86,34 +89,18 @@ public class StringCache {
         return origin;
     }
 
-    public static String nextPredefinedString() {
-        if (strings.isEmpty()) {
-            return "";
-        }
-        if (strings.size() == 1) {
-            return strings.get(0);
-        }
-        int i = ThreadLocalRandom.current().nextInt(strings.size());
-        return strings.get(i);
-    }
-
     public static String nextString() {
-        if (!strings.isEmpty()) {
-            return nextPredefinedString();
-        }
-        if (stringList.isEmpty()) {
-            return "";
-        }
-        if (RandomHelper.nextBoolean()) {
-            return RandomHelper.nextString();
-        }
         int i = ThreadLocalRandom.current().nextInt(stringList.size());
-        String string = stringList.get(i);
-        int length = RandomHelper.nextInt(Config.maxStringPieceLength) + 1;
-        if (string.length() <= length) {
-            return string;
+        String string = null;
+        if (!stringList.isEmpty()) {
+            string = stringList.get(i);
+            Logger.iformat("Select [%s] %d/%d from string list", string, i, stringList.size());
         }
-        int begin = RandomHelper.nextInt(string.length() - length);
-        return string.substring(begin, begin + length);
+
+        if (string == null || RandomHelper.toss(Config.randomFormattedStringProp)) {
+            string = RandomHelper.nextFormattedString();
+            Logger.iformat("Use random string %s", string);
+        }
+        return string;
     }
 }

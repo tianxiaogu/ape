@@ -23,7 +23,7 @@ public class StateNamingManager extends AbstractNamingManager implements Cloneab
      * 
      */
     private static final long serialVersionUID = 1L;
-    private static final boolean debug = true;
+    private static final boolean debug = false;
     private Map<Naming, Map<StateKey, Naming>> namingToEdge = new HashMap<>();
 
     public StateNamingManager(NamingFactory nf) {
@@ -44,7 +44,7 @@ public class StateNamingManager extends AbstractNamingManager implements Cloneab
             StateKey state = getStateKey(source, tree);
             Naming target = Utils.getFromMapMap(namingToEdge, source, state);
             if (verbose) {
-                Logger.iformat("getNaming: Source: %s, Target: %s, State: %s", source, target, state);
+                Logger.iformat("getNaming for tree %s: Source: %s, Target: %s, State: %s", tree, source, target, state);
             }
             if (target == null) {
                 return source;
@@ -72,17 +72,21 @@ public class StateNamingManager extends AbstractNamingManager implements Cloneab
     }
 
     public void updateNaming(GUITree tree, ComponentName activityName, Document dom, Naming oldOne, Naming newOne) {
-        updateNaming(tree, activityName, dom, oldOne, newOne, false);
+        updateNaming(tree, activityName, dom, oldOne, newOne, true);
     }
     public void updateNaming(GUITree tree, ComponentName activityName, Document dom, Naming oldOne, Naming newOne, boolean verbose) {
         if (oldOne == newOne) {
             return;
         }
-        if (oldOne.isAncestor(newOne)) { // state refinement
+        Naming existing = getNaming(tree, activityName, dom, true);
+        if (existing == newOne) {
+            return;
+        }
+        if (oldOne == newOne.getParent()) { // state refinement
             StateKey state = getStateKey(oldOne, tree);
             Naming check = Utils.addToMapMap(namingToEdge, oldOne, state, newOne);
             if (verbose) {
-                Logger.iformat("updateNaming: Source: %s, Target: %s, State: %s", oldOne, newOne, state);
+                Logger.iformat("updateNaming: Add - Source: %s, Target: %s, State: %s", oldOne, newOne, state);
             }
             if (check != null && check != newOne) {
                 Logger.println("=== Dump conflict naming ===");
@@ -99,9 +103,11 @@ public class StateNamingManager extends AbstractNamingManager implements Cloneab
             }
         } else if (newOne.isAncestor(oldOne)) { // state abstraction
             if (verbose) {
-                Logger.iformat("updateNaming: Source: %s, Target: %s.", oldOne, newOne);
+                Logger.iformat("updateNaming: Remove - Source: %s, Target: %s.", oldOne, newOne);
             }
-            Naming parent = oldOne.getParent();
+            Naming check = getNaming(tree, activityName, dom, true);
+            Naming child = oldOne;
+            Naming parent = child.getParent();
             while (parent != null) {
                 StateKey state = getStateKey(parent, tree);
                 Map<StateKey, Naming> edges = namingToEdge.get(parent);
@@ -109,21 +115,63 @@ public class StateNamingManager extends AbstractNamingManager implements Cloneab
                     throw new IllegalStateException("Parent Naming should be registered.");
                 } else {
                     if (verbose) {
-                        Logger.iformat("updateNaming: Parent: %s, State: %s, Leaf: %s", parent, state, oldOne);
+                        Logger.iformat("updateNaming: Parent: %s, State: %s, Child: %s", parent, state, oldOne);
                     }
-                    edges.remove(state); // a previous refinement
+                    Naming removed = edges.remove(state); // a previous refinement
+                    if (removed == null) {
+                        // has been updated by the updating of other trees
+                        if (existing != newOne) {
+                            throw new IllegalStateException();
+                        }
+                    } else if (removed != child) {
+                        Logger.println("=== Dump conflict naming ===");
+                        Logger.println(" * Dump check...");
+                        check.dump();
+                        Logger.println("----------------------------");
+                        Logger.println(" * Dump oldOne...");
+                        oldOne.dump();
+                        Logger.println("----------------------------");
+                        Logger.println(" * Dump newOne...");
+                        newOne.dump();
+                        Logger.println("----------------------------");
+                        Logger.println(" * Dump parent...");
+                        parent.dump();
+                        Logger.println("----------------------------");
+                        Logger.println(" * Dump child...");
+                        child.dump();
+                        Logger.println("----------------------------");
+                        Logger.println(" * Dump removed...");
+                        removed.dump();
+                        Logger.println("============================");
+                        throw new IllegalStateException("Removed should be the child.");
+                    }
                 }
                 if (parent == newOne) {
                     break;
                 }
-                parent = parent.getParent();
+                child = parent;
+                parent = child.getParent();
             }
             if (parent == null) {
-                throw new IllegalStateException("");
+                throw new IllegalStateException("Parent should not be null.");
             }
         } else if (newOne.getParent() == oldOne.getParent()) {
-            updateNaming(tree, activityName, dom, oldOne, newOne.getParent());
-            updateNaming(tree, activityName, dom, newOne.getParent(), newOne);
+            Naming parent = newOne.getParent();
+            if (parent == null) {
+                throw new IllegalStateException("Only root can have null parent.");
+            }
+            if (!isLeaf(newOne) || !isLeaf(oldOne)) {
+                throw new IllegalStateException("Only leaf supports replacement.");
+            }
+            if (verbose) {
+                Logger.iformat("updateNaming: Replace - Source: %s, Target: %s.", oldOne, newOne);
+            }
+            StateKey state = getStateKey(parent, tree);
+            Map<StateKey, Naming> edges = namingToEdge.get(parent);
+            if (edges == null) {
+                throw new IllegalStateException("Parent Naming should be registered.");
+            }
+            edges.put(state, newOne);
         } else {
             reportError(oldOne, newOne);
         }
@@ -137,11 +185,19 @@ public class StateNamingManager extends AbstractNamingManager implements Cloneab
                 Logger.println("----------------------------");
                 Logger.println(" * Dump newOne...");
                 newOne.dump();
+                Logger.println("----------------------------");
+                Logger.println(" * Dump oldOne...");
+                oldOne.dump();
                 Logger.println("============================");
                 dump();
                 throw new RuntimeException("Conflict: not implement yet!");
             }
         }
+    }
+
+    public boolean isLeaf(Naming naming) {
+        Map<StateKey, Naming> edges = this.namingToEdge.get(naming);
+        return edges == null || edges.isEmpty();
     }
 
     @Override
