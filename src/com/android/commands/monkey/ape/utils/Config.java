@@ -20,7 +20,7 @@ public class Config {
     /**
      * Readonly
      */
-    public static final boolean takeScreenshot = Config.getBoolean("ape.takeScreenshot", false);
+    public static final boolean takeScreenshot = Config.getBoolean("ape.takeScreenshot", true);
     public static final boolean takeScreenshotForNewState = Config.getBoolean("ape.takeScreenshotForNewState", false);
     public static final boolean takeScreenshotForEveryStep = Config.getBoolean("ape.takeScreenshotForEveryStep", true);
     public static final boolean saveGUITreeToXmlEveryStep = Config.getBoolean("ape.saveGUITreeToXmlEveryStep", true);

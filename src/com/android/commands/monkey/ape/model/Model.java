@@ -129,11 +129,11 @@ public class Model implements Serializable {
         this(new Graph(), nm);
     }
 
-    public List<ActionRecord> getActionHistory() {
-        return this.actionHistory;
+    public synchronized List<ActionRecord> getActionHistory() {
+        return new ArrayList<>(this.actionHistory);
     }
 
-    public void appendToActionHistory(long clockTimestamp, Action action, int agentTimestamp) {
+    public synchronized void appendToActionHistory(long clockTimestamp, Action action, int agentTimestamp) {
         if (action.isModelAction()) {
             ModelAction modelAction = (ModelAction) action;
             this.actionHistory.add(new ActionRecord(clockTimestamp, agentTimestamp, action, modelAction.getResolvedGUITreeAction()));

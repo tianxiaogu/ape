@@ -521,7 +521,12 @@ public abstract class StatefulAgent extends ApeAgent implements GraphListener {
             }
             if (!newNewState.equals(newState)) {
                 if (newState.isUnvisited()) {
-                    if (!getGraph().remove(newState).isEmpty()) {
+                    Set<StateTransition> transitions = getGraph().remove(newState);
+                    if (!transitions.isEmpty()) {
+                        Logger.iformat("Non empty transitions on unvisited states: %s", newState);
+                        for (StateTransition st : transitions) {
+                            Logger.iformat("- %s", st);
+                        }
                         throw new RuntimeException("An unvisited state has non-empty transitions.");
                     }
                 }
