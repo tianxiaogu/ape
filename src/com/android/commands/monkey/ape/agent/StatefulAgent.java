@@ -164,7 +164,7 @@ public abstract class StatefulAgent extends ApeAgent implements GraphListener {
                     throw new RuntimeException("Sanity check failed!");
                 }
                 action = newModel.update((ModelAction)action, guiAction);
-                actionHistory.set(i, new ActionRecord(actionPair.clockTimestamp,
+                updateActionHistory(i, new ActionRecord(actionPair.clockTimestamp,
                         actionPair.agentTimestamp, action, guiAction));
             }
         }
@@ -1194,6 +1194,10 @@ public abstract class StatefulAgent extends ApeAgent implements GraphListener {
 
     public List<ActionRecord> getActionHistory() {
         return this.model.getActionHistory();
+    }
+
+    public void updateActionHistory(int index, ActionRecord record) {
+        this.model.updateActionHistory(index, record);
     }
 
     public void appendToActionHistory(long clockTimestamp, Action action) {

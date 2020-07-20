@@ -130,7 +130,11 @@ public class Model implements Serializable {
     }
 
     public synchronized List<ActionRecord> getActionHistory() {
-        return new ArrayList<>(this.actionHistory);
+        return Collections.unmodifiableList(this.actionHistory);
+    }
+
+    public synchronized void updateActionHistory(int i, ActionRecord record) {
+        this.actionHistory.set(i, record);
     }
 
     public synchronized void appendToActionHistory(long clockTimestamp, Action action, int agentTimestamp) {
@@ -402,17 +406,6 @@ public class Model implements Serializable {
         return action;
     }
 
-    public State update(State state) {
-        if (isStale(state)) {
-            GUITree tree = state.getLatestGUITree();
-            state = tree.getCurrentState();
-            if (isStale(state)) {
-                return getState(tree);
-            }
-        }
-        return state;
-    }
-
     public State update(GUITree tree) {
         State state = tree.getCurrentState();
         if (isStale(state)) {
@@ -437,10 +430,14 @@ public class Model implements Serializable {
         return graph;
     }
 
-    public State getState(ComponentName activity, AccessibilityNodeInfo rootInfo, Bitmap bitmap) {
+    public GUITree buildGUITree(ComponentName activity, AccessibilityNodeInfo rootInfo, Bitmap bitmap) {
         GUITreeBuilder treeBuilder = new GUITreeBuilder(namingManager, activity, rootInfo, bitmap);
         GUITree guiTree = treeBuilder.getGUITree();
-        return checkAndAddStateData(guiTree);
+        return guiTree;
+    }
+
+    public State getState(ComponentName activity, AccessibilityNodeInfo rootInfo, Bitmap bitmap) {
+        return checkAndAddStateData(buildGUITree(activity, rootInfo, bitmap));
     }
 
     public State getState(GUITree guiTree) {
@@ -452,6 +449,7 @@ public class Model implements Serializable {
         StateKey stateKey = GUITreeBuilder.getStateKey(naming, tree);
         State state = graph.getOrCreateState(stateKey);
         state.append(tree);
+        Logger.iformat("Create state %s for GUI tree %s", state, tree);
         return state;
     }
 

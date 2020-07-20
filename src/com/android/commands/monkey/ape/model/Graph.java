@@ -229,7 +229,9 @@ public class Graph implements Serializable {
             state = State.buildState(stateKey);
             state.setGraphId(graphId + "s" + keyToState.size());
             fireNewStateEvents(state);
-            keyToState.put(stateKey, state);
+            if (keyToState.put(stateKey, state) != null) {
+                throw new IllegalStateException("Impossible");
+            }
             addActivity(state);
             addActions(state);
             Utils.addToMapSet(namingToStates, state.getCurrentNaming(), state);
@@ -1156,6 +1158,7 @@ public class Graph implements Serializable {
     }
 
     void remove(State state, Collection<StateTransition> removed) {
+        Logger.dformat("> Removing state %s", state);
         {
             Map<StateTransition, StateTransition> inStateTransitions = this.stateToInStateTransitions.remove(state);
             if (inStateTransitions != null && inStateTransitions.size() > 0) {
@@ -1265,9 +1268,15 @@ public class Graph implements Serializable {
             return false;
         }
         if (check != state) {
+            Logger.wprintln("==========================================");
             Logger.wprintln("Duplicated states with the same key");
-            Logger.wprintln("   get: " + state);
-            Logger.wprintln("expect: " + check);
+            Logger.wprintln("   given: " + state);
+            Logger.wprintln("existing: " + check);
+            Logger.wprintln("------------------------------------------");
+            state.dumpState();
+            Logger.wprintln("------------------------------------------");
+            check.dumpState();
+            Logger.wprintln("==========================================");
             throw new RuntimeException("Sanity check failed!");
         }
         return check == state;

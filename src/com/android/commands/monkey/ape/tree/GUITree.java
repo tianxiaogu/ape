@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -42,6 +43,9 @@ public class GUITree implements Serializable {
         loadedGUITrees.add(tree);
     }
 
+    private static AtomicInteger counter = new AtomicInteger(0);
+
+    private int id;
     private int timestamp;
 
     private final GUITreeNode rootNode;
@@ -57,6 +61,7 @@ public class GUITree implements Serializable {
     private transient Document document;
 
     public GUITree(GUITreeNode guiTree, ComponentName activityName) {
+        this.id = counter.getAndIncrement();
         this.rootNode = guiTree;
         this.activityPackageName = activityName.getPackageName();
         this.activityClassName = activityName.getClassName();
@@ -323,7 +328,7 @@ public class GUITree implements Serializable {
     }
 
     public String toString() {
-        return "GUITree[" + this.timestamp + "]@" + currentState;
+        return "GUITree[" + this.id + "@" + this.timestamp + "]@" + currentState;
     }
 
     public Object[] getCurrentNodes() {
