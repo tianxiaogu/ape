@@ -180,7 +180,7 @@ public class Naming implements Serializable {
 
     };
 
-    static class Edge {
+    static class Edge implements Serializable {
         Namelet from;
         Namelet to;
 
