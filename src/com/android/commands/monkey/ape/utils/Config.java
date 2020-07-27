@@ -50,6 +50,7 @@ public class Config {
 
     public static final String activityManagerType = Config.get("ape.activityManagerType", "state");
 
+    public static final boolean enableReplacingNamelet = Config.getBoolean("ape.enableReplacingNamelet", false);
     public static final int actionRefinmentThreshold = Config.getInteger("ape.actionRefinmentThreshold", 3);
     public static final int maxInitialNamesPerStateThreshold = Config.getInteger("ape.maxInitialNamesPerStateThreshold", 20);
     public static final boolean actionRefinementFirst = Config.getBoolean("ape.actionRefinementFirst", true);

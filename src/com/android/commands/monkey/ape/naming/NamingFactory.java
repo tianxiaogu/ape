@@ -292,42 +292,44 @@ public class NamingFactory implements Serializable {
                 candidates.add(action.getTarget());
             }
         }
-        if (nm.isLeaf(currentNaming)) {
-            Namelet last = currentNaming.getLastNamelet();
-            Namer lastNamer = last.getNamer();
-            if (currentNaming.isReplaceable(last)) {
-                Namelet parent = last.getParent();
-                Namer parentNamer = parent.getNamer();
-                List<Namer> refinedNamers = NamerFactory.getSortedAbove(parentNamer);
-                List<Namer> upperBounds = new ArrayList<>();
-                outer: for (Namer refined : refinedNamers) {
-                    if (!upperBounds.isEmpty()) {
-                        for (Namer upper : upperBounds) {
-                            if (refined.refinesTo(upper)) {
-                                continue outer; // no retry 
+        if (Config.enableReplacingNamelet) {
+            if (nm.isLeaf(currentNaming)) {
+                Namelet last = currentNaming.getLastNamelet();
+                Namer lastNamer = last.getNamer();
+                if (currentNaming.isReplaceable(last)) {
+                    Namelet parent = last.getParent();
+                    Namer parentNamer = parent.getNamer();
+                    List<Namer> refinedNamers = NamerFactory.getSortedAbove(parentNamer);
+                    List<Namer> upperBounds = new ArrayList<>();
+                    outer:
+                    for (Namer refined : refinedNamers) {
+                        if (!upperBounds.isEmpty()) {
+                            for (Namer upper : upperBounds) {
+                                if (refined.refinesTo(upper)) {
+                                    continue outer; // no retry
+                                }
                             }
                         }
+                        if (lastNamer.refinesTo(refined)) {
+                            continue; // avoid replace with the same namelet.
+                        }
+                        Namelet newNamelet = new Namelet(last.getExprString(), refined);
+                        Naming newNaming = currentNaming.replaceLast(last, newNamelet);
+                        if (!nm.isLeaf(newNaming)) {
+                            continue;
+                        }
+                        if (!checkStateRefinement(newNaming, refined, tts1, tts2, upperBounds)) {
+                            continue;
+                        }
+                        if (!checkPredicate(nm, affected, newNaming)) {
+                            continue;
+                        }
+                        results.add(new RefinementResult(true, currentNaming, newNaming, last, newNamelet, st1, st2, tts1, tts2));
+                        break;
                     }
-                    if (lastNamer.refinesTo(refined)) {
-                        continue; // avoid replace with the same namelet.
-                    }
-                    Namelet newNamelet = new Namelet(last.getExprString(), refined);
-                    Naming newNaming = currentNaming.replaceLast(last, newNamelet);
-                    if (!nm.isLeaf(newNaming)) {
-                        continue;
-                    }
-                    if (!checkStateRefinement(newNaming, refined, tts1, tts2, upperBounds)) {
-                        continue;
-                    }
-                    if (!checkPredicate(nm, affected, newNaming)) {
-                        continue;
-                    }
-                    results.add(new RefinementResult(true, currentNaming, newNaming, last, newNamelet, st1, st2, tts1, tts2));
-                    break;
                 }
             }
         }
-
         for (Name name : candidates) {
             String xpathStr = NamerFactory.nameToXPathString(name);
             Namelet currentNamelet = checkNamelet(currentNaming, name, tts1, tts2);
@@ -650,36 +652,39 @@ public class NamingFactory implements Serializable {
             return;
         }
         Namer currentNamer = widget.getNamer();
-        if (nm.isLeaf(currentNaming)) {
-            if (currentNaming.isReplaceable(currentNamelet)) {
-                Namelet parent = currentNamelet.getParent();
-                Namer parentNamer = parent.getNamer();
-                List<Namer> refinedNamers = NamerFactory.getSortedAbove(parentNamer);
-                List<Namer> upperBounds = new ArrayList<>();
-                outer: for (Namer refined : refinedNamers) {
-                    if (!upperBounds.isEmpty()) {
-                        for (Namer upper : upperBounds) {
-                            if (refined.refinesTo(upper)) {
-                                continue outer; // no retry 
+        if (Config.enableReplacingNamelet) {
+            if (nm.isLeaf(currentNaming)) {
+                if (currentNaming.isReplaceable(currentNamelet)) {
+                    Namelet parent = currentNamelet.getParent();
+                    Namer parentNamer = parent.getNamer();
+                    List<Namer> refinedNamers = NamerFactory.getSortedAbove(parentNamer);
+                    List<Namer> upperBounds = new ArrayList<>();
+                    outer:
+                    for (Namer refined : refinedNamers) {
+                        if (!upperBounds.isEmpty()) {
+                            for (Namer upper : upperBounds) {
+                                if (refined.refinesTo(upper)) {
+                                    continue outer; // no retry
+                                }
                             }
                         }
+                        if (currentNamer.refinesTo(refined)) {
+                            continue; // avoid replace with the same namelet.
+                        }
+                        Namelet newNamelet = new Namelet(currentNamelet.getExprString(), refined);
+                        Naming newNaming = currentNaming.replaceLast(currentNamelet, newNamelet);
+                        if (!nm.isLeaf(newNaming)) {
+                            continue;
+                        }
+                        if (checkActionRefinement(newNaming, refined, tts1, tts2, upperBounds) == false) {
+                            continue outer;
+                        }
+                        if (!checkPredicate(nm, affected, newNaming)) {
+                            continue;
+                        }
+                        results.add(new RefinementResult(true, currentNaming, newNaming, currentNamelet, newNamelet, st1, st2, tts1, tts2));
+                        break;
                     }
-                    if (currentNamer.refinesTo(refined)) {
-                        continue; // avoid replace with the same namelet.
-                    }
-                    Namelet newNamelet = new Namelet(currentNamelet.getExprString(), refined);
-                    Naming newNaming = currentNaming.replaceLast(currentNamelet, newNamelet);
-                    if (!nm.isLeaf(newNaming)) {
-                        continue;
-                    }
-                    if (checkActionRefinement(newNaming, refined, tts1, tts2, upperBounds) == false) {
-                        continue outer;
-                    }
-                    if (!checkPredicate(nm, affected, newNaming)) {
-                        continue;
-                    }
-                    results.add(new RefinementResult(true, currentNaming, newNaming, currentNamelet, newNamelet, st1, st2, tts1, tts2));
-                    break;
                 }
             }
         }
@@ -1152,29 +1157,31 @@ public class NamingFactory implements Serializable {
         NamingManager nm = model.getNamingManager();
         Namelet namelet = node.getCurrentNamelet();
         Namer namer = namelet.getNamer();
-        if (nm.isLeaf(naming) && naming.isReplaceable(namelet)) {
-            Namelet parent = namelet.getParent();
-            Namer parentNamer = parent.getNamer();
-            List<Namer> refinedNamers = NamerFactory.getSortedAbove(parentNamer);
-            List<Namer> upperBounds = new ArrayList<>();
-            outer: for (Namer refined : refinedNamers) {
-                if (!upperBounds.isEmpty()) {
-                    for (Namer upper : upperBounds) {
-                        if (refined.refinesTo(upper)) {
-                            continue outer; // no retry 
+        if (Config.enableReplacingNamelet) {
+            if (nm.isLeaf(naming) && naming.isReplaceable(namelet)) {
+                Namelet parent = namelet.getParent();
+                Namer parentNamer = parent.getNamer();
+                List<Namer> refinedNamers = NamerFactory.getSortedAbove(parentNamer);
+                List<Namer> upperBounds = new ArrayList<>();
+                outer: for (Namer refined : refinedNamers) {
+                    if (!upperBounds.isEmpty()) {
+                        for (Namer upper : upperBounds) {
+                            if (refined.refinesTo(upper)) {
+                                continue outer; // no retry
+                            }
                         }
                     }
-                }
-                if (namer.refinesTo(refined)) {
-                    continue; // avoid replace with the same namelet.
-                }
-                Naming newNaming = naming.replaceLast(namelet, new Namelet(namelet.getExprString(), refined));
-                if (!nm.isLeaf(newNaming)) {
-                    continue;
-                }
-                Model newModel = checkActionRefinement(model, newNaming, refined, nodes, tree, trees, upperBounds);
-                if (newModel != null) {
-                    return newModel;
+                    if (namer.refinesTo(refined)) {
+                        continue; // avoid replace with the same namelet.
+                    }
+                    Naming newNaming = naming.replaceLast(namelet, new Namelet(namelet.getExprString(), refined));
+                    if (!nm.isLeaf(newNaming)) {
+                        continue;
+                    }
+                    Model newModel = checkActionRefinement(model, newNaming, refined, nodes, tree, trees, upperBounds);
+                    if (newModel != null) {
+                        return newModel;
+                    }
                 }
             }
         }
