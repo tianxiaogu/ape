@@ -91,6 +91,9 @@ public class Config {
     public static final int maxStringListSize = Config.getInteger("ape.maxStringListSize", 2000);
     public static final double randomFormattedStringProp = Config.getDouble("ape.randomFormattedStringProp", 0.5);
 
+    public static final int maxStatesPerActivity = Config.getInteger("ape.maxStatesPerActivity", 10);
+    public static final int maxGUITreesPerState = Config.getInteger("ape.maxGUITreesPerState", 20);
+
     public static final int trivialActivityStateThreshold = Config.getInteger("ape.trivialActivityStateThreshold", 5);
     public static final int trivialActivityVisitThreshold = Config.getInteger("ape.trivialActivityVisitThreshold", 16);
 

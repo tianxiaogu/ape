@@ -2,7 +2,9 @@ package com.android.commands.monkey.ape.naming;
 
 import static com.android.commands.monkey.ape.utils.Config.actionRefinementFirst;
 import static com.android.commands.monkey.ape.utils.Config.actionRefinmentThreshold;
+import static com.android.commands.monkey.ape.utils.Config.maxGUITreesPerState;
 import static com.android.commands.monkey.ape.utils.Config.maxInitialNamesPerStateThreshold;
+import static com.android.commands.monkey.ape.utils.Config.maxStatesPerActivity;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -21,6 +23,7 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.android.commands.monkey.ape.model.ActivityNode;
 import com.android.commands.monkey.ape.model.Model;
 import com.android.commands.monkey.ape.model.ModelAction;
 import com.android.commands.monkey.ape.model.State;
@@ -252,6 +255,16 @@ public class NamingFactory implements Serializable {
             Naming currentNaming = st1.getSource().getCurrentNaming();
             if (currentNaming == null) {
                 return Collections.emptyList(); // conflict naming
+            }
+            State state = st1.getSource();
+            final ActivityNode an = model.getGraph().getActivityNode(state.getActivity());
+            if (an.getStates().size() > maxStatesPerActivity) {
+                Logger.iformat("Already too many states %d in the activity %s.", an.getStates().size(), state.getActivity());
+                return Collections.emptyList();
+            }
+            if (an.getStates().size() > maxGUITreesPerState) {
+                Logger.iformat("Already too many GUI trees %d in the state %s.", state.getGUITrees().size(), state);
+                return Collections.emptyList();
             }
             Set<GUITree> affected = new HashSet<>(st1.getSource().getGUITrees());
             return refine(model.getNamingManager(), affected, currentNaming, st1, st2, tts1, tts2);
@@ -1142,6 +1155,15 @@ public class NamingFactory implements Serializable {
         final State state = action.getState();
         if (state.getWidgets().length >= maxInitialNamesPerStateThreshold) {
             Logger.iformat("Already too many names %d.", state.getWidgets().length);
+            return model;
+        }
+        final ActivityNode an = model.getGraph().getActivityNode(state.getActivity());
+        if (an.getStates().size() > maxStatesPerActivity) {
+            Logger.iformat("Already too many states %d in the activity %s.", an.getStates().size(), state.getActivity());
+            return model;
+        }
+        if (an.getStates().size() > maxGUITreesPerState) {
+            Logger.iformat("Already too many GUI trees %d in the state %s.", state.getGUITrees().size(), state);
             return model;
         }
         final GUITree tree = state.getLatestGUITree();
