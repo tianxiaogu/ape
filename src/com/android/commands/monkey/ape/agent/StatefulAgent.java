@@ -1203,7 +1203,7 @@ public abstract class StatefulAgent extends ApeAgent implements GraphListener {
     public void appendToActionHistory(long clockTimestamp, Action action) {
         int agentTimestamp = getTimestamp();
         this.model.appendToActionHistory(clockTimestamp, action, agentTimestamp);
-        actionCounters.logEvent(action.getType());
+        //actionCounters.logEvent(action.getType());
     }
 
     protected void saveActionHistory() {

@@ -36,6 +36,7 @@ Developers may need to update the compliance when Android updates its JDK compli
 
 See Ape's [website](http://gutianxiao.com/ape/).
 
+
 ## Support New Android Versions
 
 We tested the compatibility of Ape by using it to test Google Maps for 10 minutes in Android Marshmallow, Nougat, Oreo, Pie and Q emulators.
@@ -56,6 +57,7 @@ In addition to private APIs used by Monkey, Ape also uses many new private APIs.
 ## Basic Notes for Development
 
 Ape is the prototype of our ICSE paper. One probably needs to read the paper first in order to understand the implementation of model refinement.
+If you use Ape for academic, please cite our ICSE 2019 paper:
 
 ```
 @inproceedings{gu_practical_2019,

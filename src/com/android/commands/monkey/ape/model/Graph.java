@@ -76,6 +76,7 @@ public class Graph implements Serializable {
     private static final long serialVersionUID = -4227920009231281174L;
 
     protected Map<StateKey, State> keyToState = new HashMap<>();
+    protected Map<String, State> idToState = new HashMap<>();
 
     private Map<String, ActivityNode> activities = new HashMap<String, ActivityNode>();
     private Map<StateTransition, StateTransition> edges = new HashMap<StateTransition, StateTransition>();
@@ -100,6 +101,7 @@ public class Graph implements Serializable {
     private transient List<GraphListener> listeners;
     private int timestamp;
 
+    private int stateCounter = 0;
     private ActionCounters actionCounters = new ActionCounters();
 
     private String graphId = "g0";
@@ -227,10 +229,20 @@ public class Graph implements Serializable {
         State state = keyToState.get(stateKey);
         if (state == null) {
             state = State.buildState(stateKey);
-            state.setGraphId(graphId + "s" + keyToState.size());
+            state.setGraphId(graphId + "s" + stateCounter++);
+            //Logger.dformat("Try to add state " + state.getGraphId() + " " + state.getStateKey());
             fireNewStateEvents(state);
-            if (keyToState.put(stateKey, state) != null) {
-                throw new IllegalStateException("Impossible");
+            State check = keyToState.put(stateKey, state);
+            if (check != null) {
+                state.dumpState();
+                check.dumpState();
+                throw new IllegalStateException("Impossible: two state has the same key: " + state.getStateKey());
+            }
+            check = idToState.put(state.getGraphId(), state);
+            if (check != null) {
+                state.dumpState();
+                check.dumpState();
+                throw new IllegalStateException("Impossible: two state has the same id: " + state.getGraphId());
             }
             addActivity(state);
             addActions(state);
@@ -1210,6 +1222,7 @@ public class Graph implements Serializable {
             this.entryStates.remove(state);
             this.cleanEntryStates.remove(state);
             this.keyToState.remove(state.getStateKey());
+            this.idToState.remove(state.getGraphId());
         }
         {
             Utils.removeFromMapSet(namingToStates, state.getCurrentNaming(), state);

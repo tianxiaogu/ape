@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.android.commands.monkey.MonkeySourceApe;
 import com.android.commands.monkey.MonkeyUtils;
@@ -92,9 +93,11 @@ public abstract class ApeAgent implements Agent {
     private boolean disableRestart;
     boolean start;
 
+    private final long beginMillis;
     public ApeAgent(MonkeySourceApe ape) {
         this.ape = ape;
         updateRestartThreshold();
+        beginMillis = System.currentTimeMillis();
     }
 
     public final boolean canFuzzing() {
@@ -253,10 +256,19 @@ public abstract class ApeAgent implements Agent {
         return action;
     }
 
+    public String getElapsedTestingTime() {
+        long duration = System.currentTimeMillis() - beginMillis;
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(duration) % 60;
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(duration) % 60;
+        long hours = TimeUnit.MILLISECONDS.toHours(duration) % 24;
+        long days = TimeUnit.MILLISECONDS.toDays(duration);
+        return String.format("%04d %02d:%02d:%02d", days, hours, minutes, seconds);
+    }
+
     private Action updateStateWrapper(ComponentName topComp, AccessibilityNodeInfo info) {
         try {
-            Logger.format(">>>>>>>> %s begin step [%d][%d]", getLoggerName(), ++timestamp,
-                    SystemClock.elapsedRealtimeNanos());
+            Logger.format(">>>>>>>> %s begin step [%d][Elapsed: %s]", getLoggerName(), ++timestamp,
+                    getElapsedTestingTime());
             printExploredActivity();
             printMemoryUsage();
             try {
@@ -292,8 +304,7 @@ public abstract class ApeAgent implements Agent {
         } catch (Exception e) {
             throw e;
         } finally {
-            Logger.format(">>>>>>>> %s end step [%d][%d]", getLoggerName(), timestamp,
-                    SystemClock.elapsedRealtimeNanos());
+            Logger.format(">>>>>>>> %s end step [%d]", getLoggerName(), timestamp);
         }
 
     }
