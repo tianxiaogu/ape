@@ -83,3 +83,5 @@ Here is a list that may help understand the implementation after reading the pap
 ## Contact
 
 * Tianxiao Gu (tianxiao.gu@gmail.com)
+* Chengnian Sun (cnsun@uwaterloo.ca)
+* Zhendong Su (zhendong.su@inf.ethz.ch)
