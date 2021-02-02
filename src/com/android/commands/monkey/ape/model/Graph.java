@@ -73,6 +73,11 @@ public class Graph implements Serializable {
                 return advance().getTarget();
             }
 
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("remove");
+            }
+
         };
     }
 
@@ -360,6 +365,10 @@ public class Graph implements Serializable {
                 return treeIterator.next();
             }
 
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("remove");
+            }
         };
     }
 
